@@ -9,6 +9,8 @@ import {
   User,
   Phone,
 } from "lucide-react";
+import InputField from "../components/common/InputField";
+import Button from "../components/common/Button";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -18,7 +20,6 @@ const Signup = () => {
     name: "",
     email: "",
     phone: "",
-    role: "jobseeker",
     password: "",
     confirm: "",
     agree: false,
@@ -50,215 +51,106 @@ const Signup = () => {
       return;
     }
     setErrors({});
-    // handle signup logic here
     navigate("/login");
   };
 
-  const Field = ({ id, label, icon: Icon, error, children }) => (
-    <div>
-      <label className="block text-sm font-medium text-primary mb-1.5">
-        {label}
-      </label>
-      <div className="relative">
-        <Icon
-          size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        />
-        {children}
-      </div>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-    </div>
-  );
-
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-cover bg-center px-4 py-10"
-      style={{
-        backgroundImage:
-          "url('https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1600')",
-      }}
-    >
-      {/* overlay */}
-      <div className="absolute inset-0 bg-primary/80" />
-
+    // light shade outer bg
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gray-100">
+      {/* card with shadow */}
       <div
-        className="relative w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white rounded-2xl overflow-hidden
+                   shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_10px_40px_-4px_rgba(0,0,0,0.12)]
+                   border border-gray-100"
         data-aos="fade-up"
       >
-        {/* Top accent bar */}
+        {/* top accent bar */}
         <div className="h-1.5 w-full bg-accent" />
 
         <div className="px-8 py-10">
           {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-accent border-2 border-accent/60 mb-3">
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-accent border-2 border-accent/60">
               <Globe2 size={24} />
             </div>
-            <h1 className="text-2xl font-bold text-primary">
-              Won<span className="text-accent">Net!</span>
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Create your account
-            </p>
+            <div>
+              <h1 className="text-2xl font-bold text-primary">
+                Won<span className="text-accent">Net!</span>
+              </h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Create Your Account
+              </p>
+            </div>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
-            <Field
+            <InputField
               label="Full Name"
-              icon={User}
+              type="text"
+              placeholder="John Doe"
+              value={form.name}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
               error={errors.name}
-            >
-              <input
-                type="text"
-                placeholder="John Doe"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className={`w-full pl-9 pr-4 py-2.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-accent text-primary ${
-                  errors.name
-                    ? "border-red-400 bg-red-50"
-                    : "border-gray-200 bg-gray-50"
-                }`}
-              />
-            </Field>
+              icon={User}
+              required
+            />
 
-            {/* Email */}
-            <Field
+            <InputField
               label="Email Address"
-              icon={Mail}
+              type="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
               error={errors.email}
-            >
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) =>
-                  setForm({ ...form, email: e.target.value })
-                }
-                className={`w-full pl-9 pr-4 py-2.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-accent text-primary ${
-                  errors.email
-                    ? "border-red-400 bg-red-50"
-                    : "border-gray-200 bg-gray-50"
-                }`}
-              />
-            </Field>
+              icon={Mail}
+              required
+            />
 
-            {/* Phone */}
-            <Field
+            <InputField
               label="Phone Number"
-              icon={Phone}
+              type="tel"
+              placeholder="+1 234 567 890"
+              value={form.phone}
+              onChange={(e) =>
+                setForm({ ...form, phone: e.target.value })
+              }
               error={errors.phone}
-            >
-              <input
-                type="tel"
-                placeholder="+1 234 567 890"
-                value={form.phone}
-                onChange={(e) =>
-                  setForm({ ...form, phone: e.target.value })
-                }
-                className={`w-full pl-9 pr-4 py-2.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-accent text-primary ${
-                  errors.phone
-                    ? "border-red-400 bg-red-50"
-                    : "border-gray-200 bg-gray-50"
-                }`}
-              />
-            </Field>
+              icon={Phone}
+              required
+            />
 
-            {/* Role */}
-            <div>
-              <label className="block text-sm font-medium text-primary mb-1.5">
-                I am a
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {["jobseeker", "employer"].map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setForm({ ...form, role: r })}
-                    className={`py-2.5 rounded-md border text-sm font-semibold capitalize transition ${
-                      form.role === r
-                        ? "bg-accent text-primary border-accent"
-                        : "border-gray-200 text-gray-500 hover:border-accent hover:text-accent"
-                    }`}
-                  >
-                    {r === "jobseeker" ? "Job Seeker" : "Employer"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-primary mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <Lock
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm({ ...form, password: e.target.value })
-                  }
-                  className={`w-full pl-9 pr-10 py-2.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-accent text-primary ${
-                    errors.password
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-200 bg-gray-50"
-                  }`}
-                />
+            <InputField
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={form.password}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
+              error={errors.password}
+              icon={Lock}
+              required
+              rightElement={
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition"
+                  className="text-gray-400 hover:text-primary transition"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
                 </button>
-              </div>
-              {errors.password && (
-                <p className="text-xs text-red-500 mt-1">{errors.password}</p>
-              )}
-            </div>
+              }
+            />
 
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-primary mb-1.5">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type={showConfirm ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={form.confirm}
-                  onChange={(e) =>
-                    setForm({ ...form, confirm: e.target.value })
-                  }
-                  className={`w-full pl-9 pr-10 py-2.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-accent text-primary ${
-                    errors.confirm
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-200 bg-gray-50"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition"
-                >
-                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              {errors.confirm && (
-                <p className="text-xs text-red-500 mt-1">{errors.confirm}</p>
-              )}
-            </div>
+           
 
             {/* Terms */}
             <div>
@@ -293,37 +185,17 @@ const Signup = () => {
               )}
             </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              className="w-full bg-accent text-primary font-semibold py-2.5 rounded-md hover:bg-yellow-300 transition text-sm"
-            >
+            <Button type="submit" size="full">
               Create Account
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <span className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">or continue with</span>
-              <span className="flex-1 h-px bg-gray-200" />
-            </div>
-
-            {/* Google */}
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-md py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition"
-            >
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                alt="Google"
-                className="w-4 h-4"
-              />
-              Sign up with Google
-            </button>
+            </Button>
           </form>
 
-          {/* Footer */}
-          <p className="text-center text-sm text-gray-500 mt-6">
+            
+ {/* Divider */}
+          <div className="flex items-center gap-2 my-2">
+          </div>
+
+          <p className="text-center text-sm text-gray-500">
             Already have an account?{" "}
             <Link
               to="/login"
