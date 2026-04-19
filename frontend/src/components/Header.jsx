@@ -1,91 +1,113 @@
 import React, { useState } from "react";
-import { Phone, Mail, MapPin, Menu, X } from "lucide-react";
-import logo from "../assets/logo.jfif";
+import { Menu, X, Globe2 } from "lucide-react";
+import { useLocation, Link, href } from "react-router-dom";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  const navLinks = [
+    { label: "Home", href: "/" },
+  { label: "About",href:"/about"},
+    { label: "Jobs", href: "/jobs" },
+    { label: "My Applications", href: "/applications" },
+  ];
+
+  // Check if current path matches the link
+  const isActive = (href) => {
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
+  };
 
   return (
-    <div className="sticky top-0 z-50">
+    <header className="sticky top-0 z-50">
+      {/* Main navbar */}
+      <div className="bg-gray-50/95 backdrop-blur shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-18 flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 md:gap-3">
+            <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-primary text-accent border border-accent/60">
+              <Globe2 size={22} />
+            </div>
+            <div className="leading-tight">
+              <span className="block text-lg md:text-xl font-semibold text-primary">
+                Won<span className="text-accent">Net!</span>
+              </span>
+              <span className="hidden md:block text-[11px] text-gray-500">
+                Smart Job &amp; Talent Network
+              </span>
+            </div>
+          </Link>
 
-    {/* ✅ Top Bar */}
-<div className="bg-white text-sm shadow-sm">
-  <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center">
-    
-    <div className="flex items-center space-x-2">
-      <Phone size={16} className="text-accent" />
-      <span className="text-primary">
-        Hotline: 0123-456-789
-      </span>
-    </div>
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`relative pb-1 font-medium transition-colors ${
+                  isActive(link.href)
+                    ? "text-accent"
+                    : "text-gray-700 hover:text-accent"
+                }`}
+              >
+                {link.label}
+                {/* active underline */}
+                <span
+                  className={`absolute -bottom-1 left-0 h-[2px] bg-accent rounded-full transition-all duration-300 ${
+                    isActive(link.href) ? "w-full" : "w-0"
+                  }`}
+                />
+              </Link>
+            ))}
 
-    <div className="flex items-center space-x-4">
-      <Mail
-        size={16}
-        className="text-accent cursor-pointer hover:opacity-70 transition"
-      />
-      <MapPin
-        size={16}
-        className="text-accent cursor-pointer hover:opacity-70 transition"
-      />
-    </div>
-  </div>
-</div>
-
-      {/* ✅ Main Navbar */}
-      <header className="bg-primary shadow-md">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center text-white">
-          
-          <div className="flex items-center space-x-3">
-            <img
-              src={logo}
-              alt="WonNet Logo"
-              className="h-10 w-10 object-contain"
-            />
-            <h1 className="text-2xl font-bold">
-              Won
-              <span className="text-accent">Net!</span>
-            </h1>
-          </div>
-
-          <nav className="hidden md:flex items-center space-x-8">
-            <a href="/" className="hover:text-accent transition">Home</a>
-            <a href="/jobs" className="hover:text-accent transition">Jobs</a>
-            <a href="/applications" className="hover:text-accent transition">
-              My Applications
-            </a>
-            <a
-              href="/login"
-              className="bg-accent text-black px-4 py-2 rounded-md font-semibold hover:opacity-90 transition"
+            <Link
+              to="/login"
+              className="ml-2 inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-yellow-300 transition"
             >
               Login
-            </a>
+            </Link>
           </nav>
 
-          <div className="md:hidden text-white">
-            <button onClick={() => setIsOpen(!isOpen)}>
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
-          </div>
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden inline-flex items-center justify-center text-primary"
+            onClick={() => setIsOpen((prev) => !prev)}
+            aria-label="Toggle navigation"
+          >
+            {isOpen ? <X size={26} /> : <Menu size={26} />}
+          </button>
         </div>
 
+        {/* Mobile dropdown */}
         {isOpen && (
-          <div className="md:hidden bg-primary px-6 py-4 space-y-4 text-white">
-            <a href="/" className="block hover:text-accent">Home</a>
-            <a href="/jobs" className="block hover:text-accent">Jobs</a>
-            <a href="/applications" className="block hover:text-accent">
-              My Applications
-            </a>
-            <a
-              href="/login"
-              className="block bg-accent text-black px-4 py-2 rounded-md font-semibold text-center"
+          <div className="md:hidden bg-gray-50 border-t border-gray-200 px-4 pb-4 pt-2 space-y-2 text-sm">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`block rounded-md px-2 py-2 font-medium transition-colors ${
+                  isActive(link.href)
+                    ? "bg-accent/10 text-accent"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-accent"
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            <Link
+              to="/login"
+              className="mt-2 block rounded-md bg-accent px-3 py-2 text-center text-sm font-semibold text-primary hover:bg-yellow-300 transition"
+              onClick={() => setIsOpen(false)}
             >
               Login
-            </a>
+            </Link>
           </div>
         )}
-      </header>
-    </div>
+      </div>
+    </header>
   );
 };
 
