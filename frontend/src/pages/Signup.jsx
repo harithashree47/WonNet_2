@@ -11,60 +11,87 @@ import {
 } from "lucide-react";
 import InputField from "../components/common/InputField";
 import Button from "../components/common/Button";
+import { registerUser } from "../api/auth";
 
 const Signup = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirm: "",
-    agree: false,
-  });
+
+ const [form, setForm] = useState({
+  name: "",
+  email: "",
+  mobile: "",
+  password: "",
+  agree: false,
+
+});
+
   const [errors, setErrors] = useState({});
 
   const validate = () => {
     const err = {};
+
     if (!form.name) err.name = "Full name is required";
+
     if (!form.email) err.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(form.email))
       err.email = "Enter a valid email";
-    if (!form.phone) err.phone = "Phone number is required";
+
+    if (!form.mobile) err.mobile = "Mobile number is required"; // ✅ FIXED
+
     if (!form.password) err.password = "Password is required";
     else if (form.password.length < 6)
       err.password = "Minimum 6 characters";
-    if (!form.confirm) err.confirm = "Please confirm your password";
-    else if (form.confirm !== form.password)
-      err.confirm = "Passwords do not match";
+
+
     if (!form.agree) err.agree = "You must accept the terms";
+
     return err;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const err = validate();
-    if (Object.keys(err).length > 0) {
-      setErrors(err);
-      return;
-    }
-    setErrors({});
-    navigate("/login");
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  console.log("STEP 1: submit triggered");
+
+  const err = validate();
+  if (Object.keys(err).length > 0) {
+    console.log("STEP 2: validation failed", err);
+    setErrors(err);
+    return;
+  }
+
+  console.log("STEP 3: validation passed");
+
+  const userData = {
+    name: form.name,
+    email: form.email,
+    mobile: form.mobile,
+    password: form.password,
   };
 
+  console.log("STEP 4: sending data", userData);
+
+  try {
+    const res = await registerUser(userData);
+
+    console.log("STEP 5: API success", res); // 👈 IMPORTANT
+
+    navigate("/login");
+
+  } catch (error) {
+    console.log("STEP 6: API error", error); // 👈 IMPORTANT
+
+    setErrors({
+      api: error.message || "Registration failed",
+    });
+  }
+};
+
   return (
-    // light shade outer bg
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gray-100">
-      {/* card with shadow */}
-      <div
-        className="w-full max-w-md bg-white rounded-2xl overflow-hidden
-                   shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_10px_40px_-4px_rgba(0,0,0,0.12)]
-                   border border-gray-100"
-        data-aos="fade-up"
-      >
-        {/* top accent bar */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow border border-gray-100">
+
         <div className="h-1.5 w-full bg-accent" />
 
         <div className="px-8 py-10">
@@ -85,10 +112,10 @@ const Signup = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+
             <InputField
               label="Full Name"
               type="text"
-              placeholder="John Doe"
               value={form.name}
               onChange={(e) =>
                 setForm({ ...form, name: e.target.value })
@@ -101,7 +128,6 @@ const Signup = () => {
             <InputField
               label="Email Address"
               type="email"
-              placeholder="you@example.com"
               value={form.email}
               onChange={(e) =>
                 setForm({ ...form, email: e.target.value })
@@ -112,14 +138,13 @@ const Signup = () => {
             />
 
             <InputField
-              label="Phone Number"
+              label="Mobile Number"
               type="tel"
-              placeholder="+1 234 567 890"
-              value={form.phone}
+              value={form.mobile} // ✅ FIXED
               onChange={(e) =>
-                setForm({ ...form, phone: e.target.value })
+                setForm({ ...form, mobile: e.target.value }) // ✅ FIXED
               }
-              error={errors.phone}
+              error={errors.mobile}
               icon={Phone}
               required
             />
@@ -127,7 +152,6 @@ const Signup = () => {
             <InputField
               label="Password"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
               value={form.password}
               onChange={(e) =>
                 setForm({ ...form, password: e.target.value })
@@ -139,49 +163,35 @@ const Signup = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="text-gray-400 hover:text-primary transition"
                 >
-                  {showPassword ? (
-                    <EyeOff size={16} />
-                  ) : (
-                    <Eye size={16} />
-                  )}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               }
             />
 
-           
+            {/* API Error */}
+            {errors.api && (
+              <p className="text-sm text-red-500 text-center">
+                {errors.api}
+              </p>
+            )}
 
             {/* Terms */}
             <div>
-              <label className="flex items-start gap-2 cursor-pointer">
+              <label className="flex items-start gap-2">
                 <input
                   type="checkbox"
                   checked={form.agree}
                   onChange={(e) =>
                     setForm({ ...form, agree: e.target.checked })
                   }
-                  className="accent-yellow-400 w-4 h-4 mt-0.5"
                 />
-                <span className="text-sm text-gray-600">
-                  I agree to the{" "}
-                  <Link
-                    to="/terms"
-                    className="text-accent font-medium hover:underline"
-                  >
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link
-                    to="/privacy"
-                    className="text-accent font-medium hover:underline"
-                  >
-                    Privacy Policy
-                  </Link>
+                <span className="text-sm">
+                  I agree to Terms & Privacy Policy
                 </span>
               </label>
               {errors.agree && (
-                <p className="text-xs text-red-500 mt-1">{errors.agree}</p>
+                <p className="text-xs text-red-500">{errors.agree}</p>
               )}
             </div>
 
@@ -190,17 +200,9 @@ const Signup = () => {
             </Button>
           </form>
 
-            
- {/* Divider */}
-          <div className="flex items-center gap-2 my-2">
-          </div>
-
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm mt-4">
             Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-accent font-semibold hover:underline"
-            >
+            <Link to="/login" className="text-accent">
               Sign In
             </Link>
           </p>

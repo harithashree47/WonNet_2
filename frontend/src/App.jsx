@@ -3,16 +3,22 @@ import AOSProvider from "./components/AOSProvider";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
+
 import Banner from "./components/Banner";
 import PopularJobCategories from "./components/PopularJobCategories";
 import TopHiringCompanies from "./components/TopHiringCompanies";
 import JobListing from "./components/JobListing";
-import JobDetail from "./pages/JobDetail";
 import JobStats from "./components/StatsCounters";
+
+import JobDetail from "./pages/JobDetail";
 import AboutUs from "./pages/AboutUs";
 import Jobs from "./pages/Jobs";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+
+// ✅ IMPORT THESE
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 
 // pages that should NOT show header/footer
 const authRoutes = ["/login", "/signup"];
@@ -36,32 +42,70 @@ function App() {
     <AOSProvider>
       <Layout>
         <Routes>
-          {/* Home */}
+
+          {/* 🔐 Protected Home */}
           <Route
             path="/"
             element={
-              <>
-                <Banner />
-                <TopHiringCompanies />
-                <PopularJobCategories />
-                <JobListing />
-                <JobStats />
-              </>
+              <ProtectedRoute>
+                <>
+                  <Banner />
+                  <TopHiringCompanies />
+                  <PopularJobCategories />
+                  <JobListing />
+                  <JobStats />
+                </>
+              </ProtectedRoute>
             }
           />
 
-          {/* Jobs */}
-          <Route path="/jobs" element={<Jobs />} />
+          {/* 🔐 Protected Pages */}
+          <Route
+            path="/jobs"
+            element={
+              <ProtectedRoute>
+                <Jobs />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Job Detail */}
-          <Route path="/jobs/:id" element={<JobDetail />} />
+          <Route
+            path="/jobs/:id"
+            element={
+              <ProtectedRoute>
+                <JobDetail />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* About */}
-          <Route path="/about" element={<AboutUs />} />
+          <Route
+            path="/about"
+            element={
+              <ProtectedRoute>
+                <AboutUs />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Auth – no header/footer */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          {/* 🔓 Public Auth Pages */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <Signup />
+              </PublicRoute>
+            }
+          />
+
         </Routes>
       </Layout>
     </AOSProvider>

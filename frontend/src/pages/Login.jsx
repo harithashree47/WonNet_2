@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Globe2 } from "lucide-react";
 import InputField from "../components/common/InputField";
 import Button from "../components/common/Button";
+import { loginUser } from "../api/auth";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -21,16 +22,40 @@ const Login = () => {
     return err;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const err = validate();
-    if (Object.keys(err).length > 0) {
-      setErrors(err);
-      return;
-    }
-    setErrors({});
+ 
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const err = validate();
+  if (Object.keys(err).length > 0) {
+    setErrors(err);
+    return;
+  }
+
+  setErrors({});
+
+  try {
+    const res = await loginUser({
+      email: form.email,
+      password: form.password,
+    });
+
+    console.log("Login Success:", res);
+
+    // ✅ Save JWT token
+    localStorage.setItem("token", res.access_token);
+
+    // ✅ Redirect after login
     navigate("/");
-  };
+
+  } catch (error) {
+    console.error(error);
+
+    setErrors({
+      api: error.message || "Invalid credentials",
+    });
+  }
+};
 
   return (
     // light shade outer bg
