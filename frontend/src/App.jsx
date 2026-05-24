@@ -1,4 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
+import { ToastContainer } from "react-toastify"; // 👈 ADD THIS
+import "react-toastify/dist/ReactToastify.css"; // 👈 ADD THIS
 import AOSProvider from "./components/AOSProvider";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -16,11 +18,9 @@ import Jobs from "./pages/Jobs";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
-// ✅ IMPORT THESE
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 
-// pages that should NOT show header/footer
 const authRoutes = ["/login", "/signup"];
 
 const Layout = ({ children }) => {
@@ -42,8 +42,6 @@ function App() {
     <AOSProvider>
       <Layout>
         <Routes>
-
-          {/* 🔐 Protected Home */}
           <Route
             path="/"
             element={
@@ -59,7 +57,6 @@ function App() {
             }
           />
 
-          {/* 🔐 Protected Pages */}
           <Route
             path="/jobs"
             element={
@@ -87,7 +84,6 @@ function App() {
             }
           />
 
-          {/* 🔓 Public Auth Pages */}
           <Route
             path="/login"
             element={
@@ -105,8 +101,21 @@ function App() {
               </PublicRoute>
             }
           />
-
         </Routes>
+        
+        {/* 👈 ADD ToastContainer HERE */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </Layout>
     </AOSProvider>
   );

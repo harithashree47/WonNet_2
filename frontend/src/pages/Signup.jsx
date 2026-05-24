@@ -9,6 +9,7 @@ import {
   User,
   Phone,
 } from "lucide-react";
+import { toast } from "react-toastify"; // 👈 ADD THIS
 import InputField from "../components/common/InputField";
 import Button from "../components/common/Button";
 import { registerUser } from "../api/auth";
@@ -17,14 +18,13 @@ const Signup = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
 
- const [form, setForm] = useState({
-  name: "",
-  email: "",
-  mobile: "",
-  password: "",
-  agree: false,
-
-});
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    password: "",
+    agree: false,
+  });
 
   const [errors, setErrors] = useState({});
 
@@ -37,12 +37,11 @@ const Signup = () => {
     else if (!/\S+@\S+\.\S+/.test(form.email))
       err.email = "Enter a valid email";
 
-    if (!form.mobile) err.mobile = "Mobile number is required"; // ✅ FIXED
+    if (!form.mobile) err.mobile = "Mobile number is required";
 
     if (!form.password) err.password = "Password is required";
     else if (form.password.length < 6)
       err.password = "Minimum 6 characters";
-
 
     if (!form.agree) err.agree = "You must accept the terms";
 
@@ -50,48 +49,53 @@ const Signup = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  console.log("STEP 1: submit triggered");
+    const err = validate();
+    if (Object.keys(err).length > 0) {
+      setErrors(err);
+      // 👈 Show validation error toasts
+      Object.values(err).forEach(errorMsg => {
+        toast.error(errorMsg);
+      });
+      return;
+    }
 
-  const err = validate();
-  if (Object.keys(err).length > 0) {
-    console.log("STEP 2: validation failed", err);
-    setErrors(err);
-    return;
-  }
+    const userData = {
+      name: form.name,
+      email: form.email,
+      mobile: form.mobile,
+      password: form.password,
+    };
 
-  console.log("STEP 3: validation passed");
+    try {
+      const res = await registerUser(userData);
+      console.log("Signup Success:", res);
+      
+      // 👈 Show success toast
+      toast.success(" Account created successfully! Please login.");
+      
+      // Redirect to login after toast
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
 
-  const userData = {
-    name: form.name,
-    email: form.email,
-    mobile: form.mobile,
-    password: form.password,
+    } catch (error) {
+      console.error(error);
+      
+      // 👈 Show error toast
+      const errorMessage = error.response?.data?.message || error.message || "Registration failed";
+      toast.error(` ${errorMessage}`);
+      
+      setErrors({
+        api: errorMessage,
+      });
+    }
   };
-
-  console.log("STEP 4: sending data", userData);
-
-  try {
-    const res = await registerUser(userData);
-
-    console.log("STEP 5: API success", res); // 👈 IMPORTANT
-
-    navigate("/login");
-
-  } catch (error) {
-    console.log("STEP 6: API error", error); // 👈 IMPORTANT
-
-    setErrors({
-      api: error.message || "Registration failed",
-    });
-  }
-};
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gray-100">
       <div className="w-full max-w-md bg-white rounded-2xl shadow border border-gray-100">
-
         <div className="h-1.5 w-full bg-accent" />
 
         <div className="px-8 py-10">
@@ -112,7 +116,6 @@ const Signup = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-
             <InputField
               label="Full Name"
               type="text"
@@ -140,9 +143,9 @@ const Signup = () => {
             <InputField
               label="Mobile Number"
               type="tel"
-              value={form.mobile} // ✅ FIXED
+              value={form.mobile}
               onChange={(e) =>
-                setForm({ ...form, mobile: e.target.value }) // ✅ FIXED
+                setForm({ ...form, mobile: e.target.value })
               }
               error={errors.mobile}
               icon={Phone}
@@ -169,13 +172,6 @@ const Signup = () => {
               }
             />
 
-            {/* API Error */}
-            {errors.api && (
-              <p className="text-sm text-red-500 text-center">
-                {errors.api}
-              </p>
-            )}
-
             {/* Terms */}
             <div>
               <label className="flex items-start gap-2">
@@ -200,9 +196,9 @@ const Signup = () => {
             </Button>
           </form>
 
-          <p className="text-center text-sm mt-4">
+          <p className="text-center text-sm mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-accent">
+            <Link to="/login" className="text-accent font-semibold">
               Sign In
             </Link>
           </p>

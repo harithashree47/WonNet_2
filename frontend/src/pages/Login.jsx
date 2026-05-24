@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Globe2 } from "lucide-react";
+import { toast } from "react-toastify"; // 👈 ADD THIS
 import InputField from "../components/common/InputField";
 import Button from "../components/common/Button";
 import { loginUser } from "../api/auth";
@@ -22,52 +23,61 @@ const Login = () => {
     return err;
   };
 
- 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const err = validate();
-  if (Object.keys(err).length > 0) {
-    setErrors(err);
-    return;
-  }
+    const err = validate();
+    if (Object.keys(err).length > 0) {
+      setErrors(err);
+      // 👈 Show validation error toasts
+      Object.values(err).forEach(errorMsg => {
+        toast.error(errorMsg);
+      });
+      return;
+    }
 
-  setErrors({});
+    setErrors({});
 
-  try {
-    const res = await loginUser({
-      email: form.email,
-      password: form.password,
-    });
+    try {
+      const res = await loginUser({
+        email: form.email,
+        password: form.password,
+      });
 
-    console.log("Login Success:", res);
+      console.log("Login Success:", res);
 
-    // ✅ Save JWT token
-    localStorage.setItem("token", res.access_token);
+      // Save JWT token
+      localStorage.setItem("token", res.access_token);
+      
+      // 👈 Show success toast
+      toast.success(" Login successful! Welcome back!");
+      
+      // Redirect after toast
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
 
-    // ✅ Redirect after login
-    navigate("/");
-
-  } catch (error) {
-    console.error(error);
-
-    setErrors({
-      api: error.message || "Invalid credentials",
-    });
-  }
-};
+    } catch (error) {
+      console.error(error);
+      
+      // 👈 Show error toast
+      const errorMessage = error.response?.data?.message || error.message || "Invalid credentials";
+      toast.error(` ${errorMessage}`);
+      
+      setErrors({
+        api: errorMessage,
+      });
+    }
+  };
 
   return (
-    // light shade outer bg
     <div className="min-h-screen flex items-center justify-center px-4 bg-gray-100">
-      {/* card with shadow */}
       <div
         className="w-full max-w-md bg-white rounded-2xl overflow-hidden
                    shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_10px_40px_-4px_rgba(0,0,0,0.12)]
                    border border-gray-100"
         data-aos="fade-up"
       >
-        {/* top accent bar */}
         <div className="h-1.5 w-full bg-accent" />
 
         <div className="px-8 py-10">
@@ -149,11 +159,7 @@ const Login = () => {
             </Button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-2 my-2">
-          </div>
-
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{" "}
             <Link
               to="/signup"
