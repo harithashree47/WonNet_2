@@ -15,7 +15,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // ✅ REGISTER (User only)
+  // ✅ USER REGISTER ONLY
   async register(data: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -26,11 +26,10 @@ export class AuthService {
           email: data.email,
           mobile: data.mobile,
           password: hashedPassword,
-          role: 'USER', // ✅ always USER
+          role: 'USER',
         },
       });
 
-      // ✅ Return safe response
       return {
         message: 'User registered successfully',
         user: {
@@ -41,18 +40,14 @@ export class AuthService {
         },
       };
     } catch (error) {
-      // ✅ Handle unique constraint (email/mobile)
       if (error.code === 'P2002') {
-        throw new BadRequestException(
-          'Email or mobile already exists',
-        );
+        throw new BadRequestException('Email or mobile already exists');
       }
-
       throw error;
     }
   }
 
-  // ✅ LOGIN
+  // ✅ LOGIN (ALL ROLES)
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -84,4 +79,37 @@ export class AuthService {
       },
     };
   }
+
+  // ✅ SUPER_ADMIN → CREATE ADMIN
+  async createAdmin(data: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    try {
+      const admin = await this.prisma.user.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          mobile: data.mobile,
+          password: hashedPassword,
+          role: 'ADMIN',
+        },
+      });
+
+      return {
+        message: 'Admin created successfully',
+        user: {
+          id: admin.id,
+          email: admin.email,
+          role: admin.role,
+        },
+      };
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Email or mobile already exists');
+      }
+      throw error;
+    }
+  }
+
+
 }
