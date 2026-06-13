@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import LoginPage from './pages/LoginPage';
+import { isAuthenticated, getCurrentUser, logout } from './api/auth';
 import { Layout } from './components/layout/Layout';
 import { DashboardPage } from './pages/DashboardPage';
 import { UsersPage } from './pages/UsersPage';
@@ -121,13 +122,9 @@ function App() {
 
   useEffect(() => {
     try {
-      const storedUser = localStorage.getItem('wonnet_admin');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        if (userData.loggedIn) {
-          setIsLoggedIn(true);
-          setUser(userData);
-        }
+      if (isAuthenticated()) {
+        setIsLoggedIn(true);
+        setUser(getCurrentUser());
       }
     } catch (e) {
       // ignore
@@ -140,7 +137,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('wonnet_admin');
+    logout();
     setIsLoggedIn(false);
     setUser(null);
   };

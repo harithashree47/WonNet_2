@@ -4,14 +4,13 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
-
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -24,10 +23,17 @@ export class AuthController {
     return this.authService.register(body);
   }
 
-  // ✅ LOGIN (ALL)
+  // ✅ LOGIN (ALL USERS - USER, ADMIN, SUPER_ADMIN)
   @Post('login')
   login(@Body() body: LoginDto) {
     return this.authService.login(body.email, body.password);
+  }
+
+  // ✅ ADMIN/SUPER ADMIN LOGIN (UNIFIED FOR SINGLE LOGIN PAGE)
+  @Post('admin/login')
+  @ApiOperation({ summary: 'Admin/Super Admin login - Single endpoint for both roles' })
+  async adminLogin(@Body() body: LoginDto) {
+    return this.authService.adminLogin(body.email, body.password);
   }
 
   // ✅ SUPER_ADMIN ONLY → CREATE ADMIN
@@ -37,6 +43,4 @@ export class AuthController {
   createAdmin(@Body() body: CreateUserDto) {
     return this.authService.createAdmin(body);
   }
-
-
 }

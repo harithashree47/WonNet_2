@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { adminLogin } from '../api/auth'; 
 
 // Reusable Button Component
 const Button = ({ children, onClick, type = "button", variant = "primary", disabled = false, loading = false, icon = null, className = "" }) => {
@@ -55,12 +56,6 @@ const LoginPage = ({ onLogin }) => {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Demo credentials
-    const validCredentials = [
-        { email: 'super@wonnet.com', password: 'super123', role: 'SUPER_ADMIN', name: 'Super Admin' },
-        { email: 'admin@wonnet.com', password: 'admin123', role: 'ADMIN', name: 'Admin User' }
-    ];
-
     const validateEmail = (email) => {
         const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email) return 'Email is required';
@@ -102,33 +97,18 @@ const LoginPage = ({ onLogin }) => {
         }
         
         setLoading(true);
-        
-        // Simulate API call
-        setTimeout(() => {
-            const user = validCredentials.find(
-                cred => cred.email === email && cred.password === password
-            );
-            
-            if (user) {
-                // Store in localStorage
-                const userData = {
-                    email: user.email,
-                    role: user.role,
-                    name: user.name,
-                    loggedIn: true,
-                    loginTime: new Date().toISOString()
-                };
-                localStorage.setItem('wonnet_admin', JSON.stringify(userData));
-                
-                // Call parent callback
-                if (onLogin) {
-                    onLogin(userData);
-                }
-            } else {
-                setLoginError('Invalid email or password. Please try again.');
-                setLoading(false);
-            }
-        }, 800);
+        setLoginError('');
+
+        // Using the imported adminLogin function
+        const result = await adminLogin(email, password);
+
+        if (result.success) {
+            // Update local state and persist session via onLogin callback
+            onLogin(result.data.user);
+        } else {
+            setLoginError(result.error.message || 'Invalid email or password. Please try again.');
+            setLoading(false);
+        }
     };
 
     return (
@@ -140,9 +120,6 @@ const LoginPage = ({ onLogin }) => {
             </div>
             
             <div className="max-w-md w-full animate-fadeInUp">
-                {/* Logo and Brand Section */}
-               
-                
                 {/* Login Card */}
                 <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
                     <div className="text-center mb-6">
@@ -197,20 +174,8 @@ const LoginPage = ({ onLogin }) => {
                         </Button>
                     </form>
                     
-                    <div className="mt-6 pt-4 border-t border-gray-200">
-                        <div className="text-center">
-                            <p className="text-xs text-gray-500 mb-2">
-                                <i className="fas fa-shield-alt mr-1"></i> Demo Credentials
-                            </p>
-                            <div className="flex flex-col gap-1 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg">
-                                <p><span className="font-semibold">Super Admin:</span> super@wonnet.com / super123</p>
-                                <p><span className="font-semibold">Admin:</span> admin@wonnet.com / admin123</p>
-                            </div>
-                        </div>
-                    </div>
+                   
                 </div>
-                
-              
             </div>
         </div>
     );

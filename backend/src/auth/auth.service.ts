@@ -26,6 +26,7 @@ export class AuthService {
           email: data.email,
           mobile: data.mobile,
           password: hashedPassword,
+          designation: data.designation,
           role: 'USER',
         },
       });
@@ -36,6 +37,8 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          mobile: user.mobile,
+          designation: user.designation,
           role: user.role,
         },
       };
@@ -74,13 +77,16 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
+        name: user.name,
         email: user.email,
+        mobile: user.mobile,
+        designation: user.designation,
         role: user.role,
       },
     };
   }
 
-  // ✅ SUPER_ADMIN → CREATE ADMIN
+  // ✅ SUPER_ADMIN → CREATE ADMIN (WITH DESIGNATION)
   async createAdmin(data: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -91,6 +97,7 @@ export class AuthService {
           email: data.email,
           mobile: data.mobile,
           password: hashedPassword,
+          designation: data.designation,
           role: 'ADMIN',
         },
       });
@@ -99,7 +106,10 @@ export class AuthService {
         message: 'Admin created successfully',
         user: {
           id: admin.id,
+          name: admin.name,
           email: admin.email,
+          mobile: admin.mobile,
+          designation: admin.designation,
           role: admin.role,
         },
       };
@@ -111,5 +121,44 @@ export class AuthService {
     }
   }
 
+  // ✅ ADMIN/SUPER ADMIN LOGIN (SINGLE ENDPOINT FOR BOTH)
+  async adminLogin(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Check if user has admin role (ADMIN or SUPER_ADMIN)
+    if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new UnauthorizedException('Access denied. Admin or Super Admin privileges required.');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return {
+      message: `Login successful as ${user.role}`,
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        designation: user.designation,
+        role: user.role,
+      },
+    };
+  }
 }

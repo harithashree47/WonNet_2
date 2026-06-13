@@ -1,24 +1,30 @@
+// In src/user/dto/create-user.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'John Doe' })
+  @ApiProperty()
+  @IsNotEmpty()
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'john@gmail.com' })
+  @ApiProperty()
+  @IsNotEmpty()
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: '123456' })
+  @ApiProperty()
+  @IsNotEmpty()
   @IsString()
-  @MinLength(6)
   password: string;
 
-  @ApiProperty({ example: '9876543210' })
+  @ApiProperty()
+  @IsNotEmpty()
   @IsString()
-  @Matches(/^\d{10}$/, {
-    message: 'Mobile must be 10 digits',
-  })
   mobile: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  designation?: string; // Optional field
 }
