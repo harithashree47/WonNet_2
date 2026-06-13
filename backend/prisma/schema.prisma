@@ -81,6 +81,31 @@ model Location {
   @@map("locations")
 }
 
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
+}
+
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     String?
+  website   String?
+
+  status    String   @default("active")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum Role {
   USER
   ADMIN
