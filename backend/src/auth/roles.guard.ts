@@ -21,7 +21,8 @@ export class RolesGuard implements CanActivate {
     const user = request.user;
 
     // Add a safety check to prevent crashing if the user is not defined
-    if (!user || !user.role) {
+    // ✅ Also block access for inactive users
+    if (!user || !user.role || user.status === 'inactive') {
       return false;
     }
 

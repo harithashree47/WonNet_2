@@ -62,6 +62,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // ✅ Block inactive users from logging in
+    if (user.status === 'inactive') {
+      throw new UnauthorizedException('acess denied call supeadmin to give acess');
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -72,6 +77,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
     };
 
     return {
@@ -186,6 +192,11 @@ export class AuthService {
       throw new UnauthorizedException('Access denied. Admin or Super Admin privileges required.');
     }
 
+    // ✅ Block inactive admins from logging in
+    if (user.status === 'inactive') {
+      throw new UnauthorizedException('acess denied call supeadmin to give acess');
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -196,6 +207,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
     };
 
     return {
