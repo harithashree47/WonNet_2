@@ -21,6 +21,14 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String?  @unique
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 enum Role {
   USER
