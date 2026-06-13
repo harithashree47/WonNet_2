@@ -10,9 +10,9 @@ import { ExperienceLevelModule } from './experience-level/experience-level.modul
 import { EducationLevelModule } from './education-level/education-level.module';
 import { LocationModule } from './location/location.module';
 import { DepartmentModule } from './department/department.module';
-
+import { CompanyModule } from './company/company.module';
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule],
+  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule],
   controllers: [AppController],
   providers: [AppService],
 })

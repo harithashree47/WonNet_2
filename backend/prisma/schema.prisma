@@ -99,6 +99,7 @@ model Company {
   email     String?
   phone     String?
   website   String?
+  location  String?
 
   status    String   @default("active")
 
