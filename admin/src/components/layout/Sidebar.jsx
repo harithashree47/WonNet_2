@@ -5,12 +5,13 @@ import { Icon } from '../ui/Icon';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
+   { id: 'analytics', label: 'Analytics', icon: 'bar-chart' },
   { id: 'users', label: 'Users', icon: 'users', badge: '12.8k' },
-  { id: 'staff', label: 'Staff Management', icon: 'user-cog' },
+  { id: 'staff', label: 'Staff Management', icon: 'user-check' },
   { id: 'jobs', label: 'Jobs', icon: 'briefcase', badge: '1.2k' },
   { id: 'companies', label: 'Companies', icon: 'building', badge: '320' },
   { id: 'applications', label: 'Applications', icon: 'file-check' },
-  { id: 'analytics', label: 'Analytics', icon: 'bar-chart' },
+ 
   { id: 'messages', label: 'Messages', icon: 'mail', badge: '5' },
 ];
 
@@ -18,17 +19,18 @@ const masterDataItems = [
   { id: 'categories', label: 'Categories', icon: 'grid' },
   { id: 'experience-levels', label: 'Experience Levels', icon: 'layers' },
   { id: 'employment-types', label: 'Employment Types', icon: 'clipboard' },
-  { id: 'education-levels', label: 'Education Levels', icon: 'book-open' },
+  { id: 'education-levels', label: 'Education Levels', icon: 'award' },
   { id: 'departments', label: 'Departments', icon: 'building' },
 ];
 
 const secondary = [
   { id: 'settings', label: 'Settings', icon: 'settings' },
-  { id: 'help', label: 'Help & Support', icon: 'help-circle' },
+
 ];
 
 export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
-  const isSuper = user?.role === 'super_admin';
+  const role = user?.role?.toUpperCase() || '';
+  const isAdmin = role.includes('ADMIN');
 
   return (
     <aside
@@ -72,8 +74,8 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
           </p>
         )}
         {navItems.map((item) => {
-          // Only show Staff Management to Super Admins
-          if (item.id === 'staff' && !isSuper) {
+          // Only show Staff Management to Admins and Super Admins
+          if (item.id === 'staff' && !isAdmin) {
             return null;
           }
 
@@ -95,18 +97,19 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
                 <Icon name={item.icon} size={16} strokeWidth={2.25} />
               </span>
               {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
+             
               
             </button>
           );
         })}
 
-        {!collapsed && (
+        {!collapsed && isAdmin && (
           <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             Master Data
           </p>
         )}
-        {collapsed && <div className="my-3 mx-2 border-t border-slate-100"></div>}
-        {masterDataItems.map((item) => {
+        {collapsed && isAdmin && <div className="my-3 mx-2 border-t border-slate-100"></div>}
+        {isAdmin && masterDataItems.map((item) => {
           const isActive = active === item.id;
           return (
             <button

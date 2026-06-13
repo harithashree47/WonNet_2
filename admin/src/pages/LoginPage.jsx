@@ -57,8 +57,8 @@ const LoginPage = ({ onLogin }) => {
 
     // Demo credentials
     const validCredentials = [
-        { email: 'super@wonnet.com', password: 'super123', role: 'super_admin', name: 'Super Admin' },
-        { email: 'admin@wonnet.com', password: 'admin123', role: 'admin', name: 'Admin User' }
+        { email: 'super@wonnet.com', password: 'super123', role: 'SUPER_ADMIN', name: 'Super Admin' },
+        { email: 'admin@wonnet.com', password: 'admin123', role: 'ADMIN', name: 'Admin User' }
     ];
 
     const validateEmail = (email) => {

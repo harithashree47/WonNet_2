@@ -98,7 +98,7 @@ export const ExperienceLevelsPage = () => {
           <p className="text-sm text-slate-500 mt-1">Manage experience level options (Master Data)</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" icon="download">Export</Button>
+         
           <Button icon="plus" onClick={openAddModal}>Add Level</Button>
         </div>
       </div>
