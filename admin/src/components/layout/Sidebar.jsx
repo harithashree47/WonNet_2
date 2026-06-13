@@ -5,13 +5,12 @@ import { Icon } from '../ui/Icon';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
-   { id: 'analytics', label: 'Analytics', icon: 'bar-chart' },
   { id: 'users', label: 'Users', icon: 'users', badge: '12.8k' },
-  { id: 'staff', label: 'Staff Management', icon: 'user-check' },
+  { id: 'staff', label: 'Staff Management', icon: 'user-cog' },
   { id: 'jobs', label: 'Jobs', icon: 'briefcase', badge: '1.2k' },
   { id: 'companies', label: 'Companies', icon: 'building', badge: '320' },
   { id: 'applications', label: 'Applications', icon: 'file-check' },
- 
+  { id: 'analytics', label: 'Analytics', icon: 'bar-chart' },
   { id: 'messages', label: 'Messages', icon: 'mail', badge: '5' },
 ];
 
@@ -19,18 +18,19 @@ const masterDataItems = [
   { id: 'categories', label: 'Categories', icon: 'grid' },
   { id: 'experience-levels', label: 'Experience Levels', icon: 'layers' },
   { id: 'employment-types', label: 'Employment Types', icon: 'clipboard' },
-  { id: 'education-levels', label: 'Education Levels', icon: 'award' },
+  { id: 'education-levels', label: 'Education Levels', icon: 'book-open' },
   { id: 'departments', label: 'Departments', icon: 'building' },
 ];
 
 const secondary = [
   { id: 'settings', label: 'Settings', icon: 'settings' },
-
+  { id: 'help', label: 'Help & Support', icon: 'help-circle' },
 ];
 
 export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
-  const role = user?.role?.toUpperCase() || '';
-  const isAdmin = role.includes('ADMIN');
+  const role = user?.role?.toUpperCase();
+  const isSuper = role === 'SUPER_ADMIN';
+  const isAdmin = isSuper || role === 'ADMIN';
 
   return (
     <aside
@@ -97,7 +97,11 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
                 <Icon name={item.icon} size={16} strokeWidth={2.25} />
               </span>
               {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
-             
+              {!collapsed && item.badge && (
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold group-hover:bg-slate-200 transition-colors">
+                  {item.badge}
+                </span>
+              )}
               
             </button>
           );

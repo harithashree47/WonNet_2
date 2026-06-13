@@ -3,6 +3,10 @@ import {
   Post,
   Body,
   UseGuards,
+  Get,
+  Patch,
+  Param,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -11,6 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
+import { UpdateUserDto } from 'src/user/dto/update-user.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -39,8 +44,32 @@ export class AuthController {
   // ✅ SUPER_ADMIN ONLY → CREATE ADMIN
   @Post('create-admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN')
+  @Roles('SUPER_ADMIN', 'ADMIN')
   createAdmin(@Body() body: CreateUserDto) {
     return this.authService.createAdmin(body);
+  }
+
+  // ✅ GET ALL ADMINS
+  @Get('admins')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  getAllAdmins() {
+    return this.authService.getAllAdmins();
+  }
+
+  // ✅ UPDATE ADMIN (PATCH)
+  @Patch('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  updateAdmin(@Param('id') id: string, @Body() body: UpdateUserDto) {
+    return this.authService.updateAdmin(+id, body);
+  }
+
+  // ✅ SOFT DELETE ADMIN
+  @Delete('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  softDeleteAdmin(@Param('id') id: string) {
+    return this.authService.softDeleteAdmin(+id);
   }
 }

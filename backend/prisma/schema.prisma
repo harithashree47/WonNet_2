@@ -16,6 +16,7 @@ model User {
   mobile    String   @unique
   designation String?
   role      Role @default(USER)
+  status    String   @default("active")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

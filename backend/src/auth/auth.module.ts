@@ -20,12 +20,7 @@ import { RolesGuard } from './roles.guard';
     AuthService,
     PrismaService,
     JwtStrategy,
-
-    // ✅ Make RolesGuard global (recommended)
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
+    RolesGuard,
   ],
 })
 export class AuthModule {}

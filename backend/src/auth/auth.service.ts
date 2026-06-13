@@ -7,6 +7,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { UpdateUserDto } from 'src/user/dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -40,6 +41,7 @@ export class AuthService {
           mobile: user.mobile,
           designation: user.designation,
           role: user.role,
+          status: user.status,
         },
       };
     } catch (error) {
@@ -82,6 +84,7 @@ export class AuthService {
         mobile: user.mobile,
         designation: user.designation,
         role: user.role,
+        status: user.status,
       },
     };
   }
@@ -111,6 +114,7 @@ export class AuthService {
           mobile: admin.mobile,
           designation: admin.designation,
           role: admin.role,
+          status: admin.status,
         },
       };
     } catch (error) {
@@ -119,6 +123,52 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  // ✅ UPDATE ADMIN
+  async updateAdmin(id: number, data: UpdateUserDto) {
+    const updateData: any = { ...data };
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    } else {
+      delete updateData.password;
+    }
+
+    try {
+      const admin = await this.prisma.user.update({
+        where: { id },
+        data: updateData,
+      });
+
+      return {
+        message: 'Admin updated successfully',
+        user: admin,
+      };
+    } catch (error) {
+      throw new BadRequestException('Failed to update admin');
+    }
+  }
+
+  // ✅ SOFT DELETE (INACTIVE)
+  async softDeleteAdmin(id: number) {
+    try {
+      await this.prisma.user.update({
+        where: { id },
+        data: { status: 'inactive' },
+      });
+      return { message: 'Admin account restricted successfully' };
+    } catch (error) {
+      throw new BadRequestException('Failed to restrict admin');
+    }
+  }
+
+  // ✅ GET ALL ADMINS
+  async getAllAdmins() {
+    return this.prisma.user.findMany({
+      where: {
+        role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+      },
+    });
   }
 
   // ✅ ADMIN/SUPER ADMIN LOGIN (SINGLE ENDPOINT FOR BOTH)
@@ -158,6 +208,7 @@ export class AuthService {
         mobile: user.mobile,
         designation: user.designation,
         role: user.role,
+        status: user.status,
       },
     };
   }

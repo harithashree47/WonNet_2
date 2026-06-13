@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -7,18 +7,19 @@ import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { ToneIcon } from '../components/ui/ToneIcon';
-
-// Mock data representing existing administrative staff
-const INITIAL_STAFF = [
-  { id: 1, name: 'Alex Thompson', email: 'alex@won.net', mobile: '+1 234 567 8901', designation: 'Operations Director', role: 'SUPER_ADMIN', status: 'active' },
-  { id: 2, name: 'Sarah Chen', email: 'sarah.c@won.net', mobile: '+1 987 654 3210', designation: 'Senior HR Manager', role: 'ADMIN', status: 'active' },
-  { id: 3, name: 'Michael Ross', email: 'm.ross@won.net', mobile: '+1 555 012 3456', designation: 'Technical Lead', role: 'ADMIN', status: 'inactive' },
-];
+import { createAdmin, getCurrentUser, isAuthenticated, getAdmins, updateAdmin, deleteAdmin } from '../api/auth';
 
 export const StaffManagementPage = () => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [staffList, setStaffList] = useState([]); // Empty array - no hardcoded data
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    restricted: 0
+  });
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -27,23 +28,68 @@ export const StaffManagementPage = () => {
     designation: ''
   });
 
-  const filteredStaff = INITIAL_STAFF.filter(user => 
-    user.name.toLowerCase().includes(search.toLowerCase()) || 
-    user.email.toLowerCase().includes(search.toLowerCase())
+  // Check authentication and role on component mount
+  useEffect(() => {
+    const user = getCurrentUser();
+    const role = user?.role?.toUpperCase() || '';
+    if (!isAuthenticated() || !role.includes('ADMIN')) {
+      window.location.href = '/login';
+    }
+    fetchStaff();
+  }, []);
+
+  const fetchStaff = async () => {
+    const result = await getAdmins();
+    if (result.success) {
+      // Filter out SUPER_ADMIN accounts to show only standard ADMINs
+      const adminsOnly = result.data.filter(user => user.role === 'ADMIN');
+      setStaffList(adminsOnly);
+      updateStats(adminsOnly);
+    }
+  };
+
+  // Filter staff based on search
+  const filteredStaff = staffList.filter(user => 
+    user.name?.toLowerCase().includes(search.toLowerCase()) || 
+    user.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
     if (selectedStaff) {
-      // API logic for updating existing admin
-      console.log('Updating admin:', selectedStaff.id, form);
+      // Remove password from form data for updates if it's empty to avoid validation errors
+      const updateData = { ...form };
+      if (!updateData.password) delete updateData.password;
+
+      const result = await updateAdmin(selectedStaff.id, updateData);
+      if (result.success) {
+        await fetchStaff();
+        setOpen(false);
+        setSelectedStaff(null);
+        setForm({ name: '', email: '', password: '', mobile: '', designation: '' });
+      }
     } else {
-      // API logic for creating new admin
-      console.log('Submitting new admin:', form);
+      // Create new admin using the API function
+      const result = await createAdmin(form);
+      
+      if (result.success) {
+        await fetchStaff();
+        setOpen(false);
+        setForm({ name: '', email: '', password: '', mobile: '', designation: '' });
+      } else {
+        alert(result.message || 'Failed to create admin');
+      }
     }
-    setOpen(false);
-    setSelectedStaff(null);
-    setForm({ name: '', email: '', password: '', mobile: '', designation: '' });
+    setLoading(false);
+  };
+
+  const updateStats = (list) => {
+    const total = list.length;
+    const active = list.filter(staff => !staff.status || staff.status === 'active').length;
+    const restricted = list.filter(staff => staff.status === 'inactive').length;
+    setStats({ total, active, restricted });
   };
 
   const handleEdit = (staff) => {
@@ -51,11 +97,18 @@ export const StaffManagementPage = () => {
     setForm({
       name: staff.name,
       email: staff.email,
-      password: '', // Keep password empty unless being changed
+      password: '',
       mobile: staff.mobile,
       designation: staff.designation
     });
     setOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to restrict this admin account?')) {
+      const result = await deleteAdmin(id);
+      if (result.success) fetchStaff();
+    }
   };
 
   return (
@@ -84,21 +137,21 @@ export const StaffManagementPage = () => {
           <ToneIcon icon="shield" tone="primary" size="md" />
           <div>
             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Admins</div>
-            <div className="text-xl font-bold text-slate-900">12</div>
+            <div className="text-xl font-bold text-slate-900">{stats.total}</div>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
           <ToneIcon icon="user-check" tone="success" size="md" />
           <div>
             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Active Staff</div>
-            <div className="text-xl font-bold text-slate-900">10</div>
+            <div className="text-xl font-bold text-slate-900">{stats.active}</div>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
           <ToneIcon icon="user-x" tone="danger" size="md" />
           <div>
             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Restricted</div>
-            <div className="text-xl font-bold text-slate-900">2</div>
+            <div className="text-xl font-bold text-slate-900">{stats.restricted}</div>
           </div>
         </Card>
       </div>
@@ -136,30 +189,52 @@ export const StaffManagementPage = () => {
               </TR>
             </THead>
             <TBody>
-              {filteredStaff.map((staff) => (
-                <TR key={staff.id}>
-                  <TD>
-                    <div className="font-semibold text-slate-900">{staff.name}</div>
-                    <div className="text-xs text-slate-400">{staff.email}</div>
-                  </TD>
-                  <TD className="text-sm text-slate-600">{staff.designation}</TD>
-                  <TD className="text-sm text-slate-600">{staff.mobile}</TD>
-                  <TD><Badge tone={staff.role === 'SUPER_ADMIN' ? 'warning' : 'indigo'}>{staff.role.replace('_', ' ')}</Badge></TD>
-                  <TD><Badge tone={staff.status === 'active' ? 'success' : 'default'} dot>{staff.status}</Badge></TD>
-                  <TD align="right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(staff)} />
-                      <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" />
-                    </div>
+              {filteredStaff.length === 0 ? (
+                <TR>
+                  <TD colSpan={6} className="text-center py-8 text-slate-500">
+                    No staff members found
                   </TD>
                 </TR>
-              ))}
+              ) : (
+                filteredStaff.map((staff) => (
+                  <TR key={staff.id}>
+                    <TD>
+                      <div className="font-semibold text-slate-900">{staff.name}</div>
+                      <div className="text-xs text-slate-400">{staff.email}</div>
+                    </TD>
+                    <TD className="text-sm text-slate-600">{staff.designation || 'N/A'}</TD>
+                    <TD className="text-sm text-slate-600">{staff.mobile}</TD>
+                    <TD>
+                      <Badge tone={staff.role === 'SUPER_ADMIN' ? 'warning' : 'indigo'}>
+                        {staff.role?.replace('_', ' ')}
+                      </Badge>
+                    </TD>
+                    <TD>
+                      <Badge tone={staff.status === 'active' ? 'success' : 'default'} dot>
+                        {staff.status || 'active'}
+                      </Badge>
+                    </TD>
+                    <TD align="right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(staff)} />
+                        <Button 
+                          variant="ghost" 
+                          size="xs" 
+                          icon="trash-2" 
+                          className="text-rose-500" 
+                          onClick={() => handleDelete(staff.id)}
+                        />
+                      </div>
+                    </TD>
+                  </TR>
+                ))
+              )}
             </TBody>
           </Table>
         </div>
       </Card>
 
-      {/* Create Admin Modal */}
+      {/* Create/Edit Admin Modal */}
       <Modal 
         open={open} 
         onClose={() => setOpen(false)} 
@@ -169,19 +244,66 @@ export const StaffManagementPage = () => {
         footer={
           <>
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" form="staff-form">{selectedStaff ? 'Update Account' : 'Create Account'}</Button>
+            <Button type="submit" form="staff-form" loading={loading}>
+              {selectedStaff ? 'Update Account' : 'Create Account'}
+            </Button>
           </>
         }
       >
         <form id="staff-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1"><label className="text-xs font-semibold text-slate-500">Full Name</label><Input placeholder="e.g. John Doe" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required /></div>
-            <div className="space-y-1"><label className="text-xs font-semibold text-slate-500">Designation</label><Input placeholder="e.g. System Admin" value={form.designation} onChange={(e) => setForm({...form, designation: e.target.value})} required /></div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-500">Full Name *</label>
+              <Input 
+                placeholder="e.g. John Doe" 
+                value={form.name} 
+                onChange={(e) => setForm({...form, name: e.target.value})} 
+                required 
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-500">Designation *</label>
+              <Input 
+                placeholder="e.g. System Admin" 
+                value={form.designation} 
+                onChange={(e) => setForm({...form, designation: e.target.value})} 
+                required 
+              />
+            </div>
           </div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-slate-500">Email Address</label><Input type="email" placeholder="admin@won.net" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} required /></div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">Email Address *</label>
+            <Input 
+              type="email" 
+              placeholder="admin@won.net" 
+              value={form.email} 
+              onChange={(e) => setForm({...form, email: e.target.value})} 
+              required 
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1"><label className="text-xs font-semibold text-slate-500">Mobile Number</label><Input placeholder="+1..." value={form.mobile} onChange={(e) => setForm({...form, mobile: e.target.value})} required /></div>
-            <div className="space-y-1"><label className="text-xs font-semibold text-slate-500">Password</label><Input type="password" placeholder="••••••••" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} required={!selectedStaff} /></div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-500">Mobile Number *</label>
+              <Input 
+                placeholder="+1..." 
+                value={form.mobile} 
+                onChange={(e) => setForm({...form, mobile: e.target.value})} 
+                required 
+              />
+            </div>
+            {/* Conditionally render password field */}
+            {!selectedStaff && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">Password *</label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => setForm({...form, password: e.target.value})}
+                  required
+                />
+              </div>
+            )}
           </div>
         </form>
       </Modal>
