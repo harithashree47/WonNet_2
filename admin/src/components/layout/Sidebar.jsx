@@ -18,7 +18,8 @@ const masterDataItems = [
   { id: 'categories', label: 'Categories', icon: 'grid' },
   { id: 'experience-levels', label: 'Experience Levels', icon: 'layers' },
   { id: 'employment-types', label: 'Employment Types', icon: 'clipboard' },
-  { id: 'work-modes', label: 'Work Modes', icon: 'globe' }, // ← ADDED WORK MODE
+  { id: 'work-modes', label: 'Work Modes', icon: 'globe' }, 
+  { id: 'locations', label: 'Locations', icon: 'map-pin' },
   { id: 'education-levels', label: 'Education Levels', icon: 'award' },
   { id: 'departments', label: 'Departments', icon: 'building' },
 ];

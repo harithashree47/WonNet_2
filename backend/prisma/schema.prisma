@@ -69,6 +69,18 @@ model EducationLevel {
   @@map("education_levels")
 }
 
+model Location {
+  id        Int      @id @default(autoincrement())
+  state     String
+  city      String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([state, city])
+  @@map("locations")
+}
+
 enum Role {
   USER
   ADMIN
