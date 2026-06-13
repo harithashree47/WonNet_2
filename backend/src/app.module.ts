@@ -6,9 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
 import { JobtypeModule } from './jobtype/jobtype.module';
 import { WorkmodeModule } from './workmode/workmode.module';
+import { ExperienceLevelModule } from './experience-level/experience-level.module';
 
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule],
+  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule],
   controllers: [AppController],
   providers: [AppService],
 })
