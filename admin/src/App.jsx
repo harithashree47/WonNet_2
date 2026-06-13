@@ -16,6 +16,7 @@ import { ExperienceLevelsPage } from './pages/ExperienceLevelsPage';
 import { EmploymentTypesPage } from './pages/EmploymentTypesPage';
 import { EducationLevelsPage } from './pages/EducationLevelsPage';
 import { DepartmentsPage } from './pages/DepartmentsPage';
+import { WorkModePage } from './pages/WorkModePage'; // ← IMPORT WORK MODE PAGE
 import { Card, CardHeader, CardBody } from './components/ui/Card';
 import { Button } from './components/ui/Button';
 import { Badge } from './components/ui/Badge';
@@ -32,6 +33,7 @@ const PAGE_META = {
   categories: { title: 'Categories', subtitle: 'Manage job categories (Master Data)' },
   'experience-levels': { title: 'Experience Levels', subtitle: 'Manage experience level options (Master Data)' },
   'employment-types': { title: 'Employment Types', subtitle: 'Manage employment type options (Master Data)' },
+  'work-modes': { title: 'Work Modes', subtitle: 'Manage work arrangement options (Remote, On-site, Hybrid)' }, // ← ADD WORK MODE META
   'education-levels': { title: 'Education Levels', subtitle: 'Manage education requirement options (Master Data)' },
   departments: { title: 'Departments', subtitle: 'Manage departments (Master Data)' },
   messages: { title: 'Messages', subtitle: 'Your inbox and conversations' },
@@ -87,6 +89,8 @@ const Shell = ({ user, onLogout }) => {
         return <ExperienceLevelsPage />;
       case 'employment-types':
         return <EmploymentTypesPage />;
+      case 'work-modes': // ← ADD WORK MODE CASE
+        return <WorkModePage />;
       case 'education-levels':
         return <EducationLevelsPage />;
       case 'departments':

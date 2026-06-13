@@ -18,6 +18,7 @@ const masterDataItems = [
   { id: 'categories', label: 'Categories', icon: 'grid' },
   { id: 'experience-levels', label: 'Experience Levels', icon: 'layers' },
   { id: 'employment-types', label: 'Employment Types', icon: 'clipboard' },
+  { id: 'work-modes', label: 'Work Modes', icon: 'globe' }, // ← ADDED WORK MODE
   { id: 'education-levels', label: 'Education Levels', icon: 'award' },
   { id: 'departments', label: 'Departments', icon: 'building' },
 ];
@@ -157,8 +158,6 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
           );
         })}
       </nav>
-
-  
     </aside>
   );
 };

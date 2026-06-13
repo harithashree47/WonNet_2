@@ -39,6 +39,13 @@ model JobType {
   updatedAt DateTime @updatedAt
 } 
 
+model WorkMode {
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  status String @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
 
 enum Role {
   USER
