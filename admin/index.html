@@ -4,7 +4,66 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>admin</title>
+    <meta name="description" content="WonNet Admin Panel — Premium job portal management dashboard" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              heading: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+                400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+                800: '#3730a3', 900: '#312e81',
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html, body, #root { height: 100%; }
+      body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f5f7fb; color: #0f172a; }
+      * { box-sizing: border-box; }
+      h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; letter-spacing: -0.01em; }
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      .gradient-brand { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%); }
+      .gradient-mesh { background: radial-gradient(at 20% 10%, rgba(99,102,241,0.15) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(236,72,153,0.12) 0px, transparent 50%), radial-gradient(at 0% 80%, rgba(56,189,248,0.12) 0px, transparent 50%), radial-gradient(at 80% 100%, rgba(168,85,247,0.12) 0px, transparent 50%); }
+      .shadow-premium { box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.06), 0 12px 32px -8px rgba(99,102,241,0.12); }
+      .shadow-premium-lg { box-shadow: 0 4px 24px rgba(15,23,42,0.08), 0 24px 60px -16px rgba(99,102,241,0.18); }
+      .text-gradient { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+      .glass { background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.5); }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+      @keyframes fadeInUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+      @keyframes slideInLeft { from { opacity:0; transform: translateX(-16px); } to { opacity:1; transform: translateX(0); } }
+      @keyframes pulseGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); } 50% { box-shadow: 0 0 0 12px rgba(99,102,241,0); } }
+      @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+      .animate-fade-in { animation: fadeIn 0.4s ease-out both; }
+      .animate-fade-in-up { animation: fadeInUp 0.5s ease-out both; }
+      .animate-slide-in-left { animation: slideInLeft 0.4s ease-out both; }
+      .animate-pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+    </style>
+    <title>WonNet Admin</title>
   </head>
   <body>
     <div id="root"></div>
