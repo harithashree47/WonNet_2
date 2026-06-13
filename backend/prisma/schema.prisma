@@ -77,6 +77,8 @@ model Location {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+   companies Company[]
+
   @@unique([state, city])
   @@map("locations")
 }
@@ -94,17 +96,19 @@ model Department {
 
 
 model Company {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?
-  phone     String?
-  website   String?
-  location  String?
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String?
+  phone      String?
+  website    String?
+  locationId Int?
+  status     String   @default("active")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  status    String   @default("active")
+  location   Location? @relation(fields: [locationId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@map("companies")
 }
 
 enum Role {

@@ -13,25 +13,27 @@ import {
   updateCompany, 
   deleteCompany 
 } from '../api/company';
+import { getActiveLocations } from '../api/location';
 import { isAuthenticated, getCurrentUser } from '../api/auth';
 
 const statusTone = (s) => ({ active: 'success', inactive: 'default' }[s] || 'default');
 
 export const CompaniesPage = () => {
   const [open, setOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false); // Separate modal for view
+  const [viewOpen, setViewOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
     website: '',
-    location: '',
+    locationId: '',
     status: 'active'
   });
 
@@ -41,6 +43,7 @@ export const CompaniesPage = () => {
       window.location.href = '/login';
     }
     fetchCompanies();
+    fetchLocations();
   }, []);
 
   const fetchCompanies = async () => {
@@ -51,6 +54,13 @@ export const CompaniesPage = () => {
       updateStats(result.data);
     }
     setLoading(false);
+  };
+
+  const fetchLocations = async () => {
+    const result = await getActiveLocations();
+    if (result.success) {
+      setLocations(result.data);
+    }
   };
 
   const updateStats = (list) => {
@@ -76,9 +86,18 @@ export const CompaniesPage = () => {
     }
 
     setLoading(true);
+    const submitData = {
+      name: form.name,
+      email: form.email || undefined,
+      phone: form.phone || undefined,
+      website: form.website || undefined,
+      locationId: form.locationId ? parseInt(form.locationId) : undefined,
+      status: form.status
+    };
+
     const action = selectedCompany 
-      ? updateCompany(selectedCompany.id, form)
-      : createCompany(form);
+      ? updateCompany(selectedCompany.id, submitData)
+      : createCompany(submitData);
 
     const result = await action;
     if (result.success) {
@@ -106,7 +125,7 @@ export const CompaniesPage = () => {
       email: '',
       phone: '',
       website: '',
-      location: '',
+      locationId: '',
       status: 'active'
     });
   };
@@ -118,7 +137,7 @@ export const CompaniesPage = () => {
       email: company.email || '',
       phone: company.phone || '',
       website: company.website || '',
-      location: company.location || '',
+      locationId: company.locationId?.toString() || '',
       status: company.status
     });
     setOpen(true);
@@ -140,6 +159,13 @@ export const CompaniesPage = () => {
       }
       setLoading(false);
     }
+  };
+
+  const getLocationDisplay = (company) => {
+    if (company.location) {
+      return `${company.location.city}, ${company.location.state}`;
+    }
+    return '-';
   };
 
   return (
@@ -244,7 +270,7 @@ export const CompaniesPage = () => {
                     </TD>
                     <TD className="text-sm text-slate-600">{c.email || '-'}</TD>
                     <TD className="text-sm text-slate-600">{c.phone || '-'}</TD>
-                    <TD className="text-sm text-slate-600">{c.location || '-'}</TD>
+                    <TD className="text-sm text-slate-600">{getLocationDisplay(c)}</TD>
                     <TD>
                       <Badge tone={statusTone(c.status)} dot>
                         {c.status}
@@ -311,7 +337,7 @@ export const CompaniesPage = () => {
               </div>
               <div className="bg-slate-50 rounded-xl p-4">
                 <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Location</p>
-                <p className="text-sm text-slate-800 mt-1">{selectedCompany.location || 'Not provided'}</p>
+                <p className="text-sm text-slate-800 mt-1">{getLocationDisplay(selectedCompany)}</p>
               </div>
               <div className="bg-slate-50 rounded-xl p-4">
                 <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Status</p>
@@ -325,13 +351,6 @@ export const CompaniesPage = () => {
                 <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Company ID</p>
                 <p className="text-sm text-slate-800 mt-1 font-mono">#{selectedCompany.id}</p>
               </div>
-            </div>
-
-            <div className="bg-slate-50 rounded-xl p-4">
-              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Created At</p>
-              <p className="text-sm text-slate-800 mt-1">
-                {selectedCompany.createdAt ? new Date(selectedCompany.createdAt).toLocaleString() : 'Not available'}
-              </p>
             </div>
           </div>
         )}
@@ -396,11 +415,18 @@ export const CompaniesPage = () => {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-500">Location</label>
-            <Input 
-              placeholder="e.g. San Francisco, CA" 
-              value={form.location} 
-              onChange={(e) => setForm({...form, location: e.target.value})} 
-            />
+            <select
+              value={form.locationId}
+              onChange={(e) => setForm({...form, locationId: e.target.value})}
+              className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="">Select Location</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.city}, {loc.state}
+                </option>
+              ))}
+            </select>
           </div>
 
           {selectedCompany && (
