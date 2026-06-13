@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -7,38 +7,71 @@ import { ToneIcon } from '../components/ui/ToneIcon';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
-
-const initialTypes = [
-  { id: 1, name: 'Full-time', slug: 'fulltime', jobs: 486, status: 'active' },
-  { id: 2, name: 'Part-time', slug: 'parttime', jobs: 124, status: 'active' },
-  { id: 3, name: 'Contract', slug: 'contract', jobs: 215, status: 'active' },
-  { id: 4, name: 'Internship', slug: 'internship', jobs: 89, status: 'active' },
-  { id: 5, name: 'Freelance', slug: 'freelance', jobs: 67, status: 'active' },
-];
+import { 
+  getJobTypes, 
+  createJobType, 
+  updateJobType, 
+  deleteJobType 
+} from '../api/jobtype';
+import { getCurrentUser, isAuthenticated } from '../api/auth';
 
 const statusTone = (s) => ({ active: 'success', inactive: 'default' }[s] || 'default');
 
-const stats = [
-  { label: 'Total Types', value: '5', icon: 'clipboard', tone: 'primary' },
-  { label: 'Active', value: '5', icon: 'check-circle', tone: 'success' },
-  { label: 'Total Jobs', value: '981', icon: 'briefcase', tone: 'info' },
-  { label: 'Most Used', value: 'Full-time', icon: 'trending-up', tone: 'warning' },
-];
-
 export const EmploymentTypesPage = () => {
-  const [types, setTypes] = useState(initialTypes);
+  const [types, setTypes] = useState([]);
   const [search, setSearch] = useState('');
   const [modalMode, setModalMode] = useState(null); // 'add' | 'view' | 'edit' | null
   const [selectedItem, setSelectedItem] = useState(null);
-  const [formData, setFormData] = useState({ name: '', slug: '', status: 'active' });
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0
+  });
+  const [formData, setFormData] = useState({ name: '', status: 'active' });
+
+  // Check authentication
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!isAuthenticated()) {
+      window.location.href = '/login';
+    }
+    fetchJobTypes();
+  }, []);
+
+  // Fetch job types from API
+  const fetchJobTypes = async () => {
+    setLoading(true);
+    const result = await getJobTypes();
+    if (result.success) {
+      setTypes(result.data);
+      updateStats(result.data);
+    } else {
+      console.error('Failed to fetch job types:', result.error);
+    }
+    setLoading(false);
+  };
+
+  // Update statistics
+  const updateStats = (data) => {
+    const total = data.length;
+    const active = data.filter(t => t.status === 'active').length;
+    const inactive = data.filter(t => t.status === 'inactive').length;
+    
+    setStats({
+      total,
+      active,
+      inactive
+    });
+  };
 
   const filtered = types.filter((t) => {
     const s = search.toLowerCase();
-    return !s || t.name.toLowerCase().includes(s) || t.slug.toLowerCase().includes(s);
+    return !s || t.name.toLowerCase().includes(s);
   });
 
   const openAddModal = () => {
-    setFormData({ name: '', slug: '', status: 'active' });
+    setFormData({ name: '', status: 'active' });
     setSelectedItem(null);
     setModalMode('add');
   };
@@ -49,7 +82,7 @@ export const EmploymentTypesPage = () => {
   };
 
   const openEditModal = (item) => {
-    setFormData({ name: item.name, slug: item.slug, status: item.status });
+    setFormData({ name: item.name, status: item.status });
     setSelectedItem(item);
     setModalMode('edit');
   };
@@ -59,24 +92,50 @@ export const EmploymentTypesPage = () => {
     setSelectedItem(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setLoading(true);
+    
     if (modalMode === 'add') {
-      const newItem = {
-        id: Date.now(),
+      const result = await createJobType({
         name: formData.name,
-        slug: formData.slug.toLowerCase().replace(/\s+/g, '-'),
-        jobs: 0,
-        status: formData.status,
-      };
-      setTypes([...types, newItem]);
-    } else if (modalMode === 'edit' && selectedItem) {
-      setTypes(types.map((t) =>
-        t.id === selectedItem.id
-          ? { ...t, name: formData.name, slug: formData.slug.toLowerCase().replace(/\s+/g, '-'), status: formData.status }
-          : t
-      ));
+        status: formData.status
+      });
+      
+      if (result.success) {
+        await fetchJobTypes();
+        closeModal();
+      } else {
+        alert(result.error?.message || 'Failed to create job type');
+      }
+    } 
+    else if (modalMode === 'edit' && selectedItem) {
+      const result = await updateJobType(selectedItem.id, {
+        name: formData.name,
+        status: formData.status
+      });
+      
+      if (result.success) {
+        await fetchJobTypes();
+        closeModal();
+      } else {
+        alert(result.error?.message || 'Failed to update job type');
+      }
     }
-    closeModal();
+    
+    setLoading(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this job type?')) {
+      setLoading(true);
+      const result = await deleteJobType(id);
+      if (result.success) {
+        await fetchJobTypes();
+      } else {
+        alert(result.error?.message || 'Failed to delete job type');
+      }
+      setLoading(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -94,71 +153,97 @@ export const EmploymentTypesPage = () => {
           <p className="text-sm text-slate-500 mt-1">Manage employment type options (Master Data)</p>
         </div>
         <div className="flex gap-2">
-      
           <Button icon="plus" onClick={openAddModal}>Add Type</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="p-4 flex items-center gap-3">
-            <ToneIcon icon={s.icon} tone={s.tone} size="md" />
-            <div>
-              <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{s.label}</div>
-              <div className="text-xl font-extrabold text-slate-900">{s.value}</div>
-            </div>
-          </Card>
-        ))}
+      {/* Stats Cards - Updated without total jobs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 flex items-center gap-3">
+          <ToneIcon icon="clipboard" tone="primary" size="md" />
+          <div>
+            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Total Types</div>
+            <div className="text-xl font-extrabold text-slate-900">{stats.total}</div>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <ToneIcon icon="check-circle" tone="success" size="md" />
+          <div>
+            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Active</div>
+            <div className="text-xl font-extrabold text-slate-900">{stats.active}</div>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <ToneIcon icon="x-circle" tone="danger" size="md" />
+          <div>
+            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Inactive</div>
+            <div className="text-xl font-extrabold text-slate-900">{stats.inactive}</div>
+          </div>
+        </Card>
       </div>
 
+      {/* Job Types Table - Removed Slug and Jobs columns */}
       <Card>
         <CardHeader title="All Employment Types" subtitle={`${filtered.length} types found`} />
-        <div className="px-6 pb-4 flex flex-col md:flex-row gap-3">
+        <div className="px-6 pb-4">
           <Input
             placeholder="Search types..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             icon="search"
-            className="flex-1"
+            className="max-w-sm"
           />
         </div>
         <Table>
           <THead>
             <TR>
               <TH>Type Name</TH>
-              <TH>Slug</TH>
-              <TH>Jobs</TH>
               <TH>Status</TH>
               <TH align="right">Actions</TH>
             </TR>
           </THead>
           <TBody>
-            {filtered.map((t) => (
-              <TR key={t.id}>
-                <TD>
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">
-                      {(t.name[0])}
-                    </div>
-                    <span className="font-semibold text-slate-900">{t.name}</span>
-                  </div>
-                </TD>
-                <TD className="text-sm text-slate-500 font-mono">{t.slug}</TD>
-                <TD><Badge tone="primary" icon="briefcase">{t.jobs}</Badge></TD>
-                <TD><Badge tone={statusTone(t.status)} dot>{t.status}</Badge></TD>
-                <TD align="right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="xs" icon="eye" onClick={() => openViewModal(t)} />
-                    <Button variant="ghost" size="xs" icon="pencil" onClick={() => openEditModal(t)} />
-                    <Button variant="ghost" size="xs" icon="more-vertical" />
-                  </div>
+            {loading && types.length === 0 ? (
+              <TR>
+                <TD colSpan={3} className="text-center py-8 text-slate-500">
+                  Loading...
                 </TD>
               </TR>
-            ))}
+            ) : filtered.length === 0 ? (
+              <TR>
+                <TD colSpan={3} className="text-center py-8 text-slate-500">
+                  No employment types found
+                </TD>
+              </TR>
+            ) : (
+              filtered.map((t) => (
+                <TR key={t.id}>
+                  <TD>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">
+                        {(t.name?.[0] || 'T')}
+                      </div>
+                      <span className="font-semibold text-slate-900">{t.name}</span>
+                    </div>
+                  </TD>
+                  <TD>
+                    <Badge tone={statusTone(t.status)} dot>{t.status}</Badge>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="xs" icon="eye" onClick={() => openViewModal(t)} />
+                      <Button variant="ghost" size="xs" icon="pencil" onClick={() => openEditModal(t)} />
+                      <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => handleDelete(t.id)} />
+                    </div>
+                  </TD>
+                </TR>
+              ))
+            )}
           </TBody>
         </Table>
       </Card>
 
+      {/* Modal - Removed slug field */}
       <Modal
         open={modalMode !== null}
         onClose={closeModal}
@@ -169,7 +254,7 @@ export const EmploymentTypesPage = () => {
           modalMode !== 'view' ? (
             <>
               <Button variant="secondary" onClick={closeModal}>Cancel</Button>
-              <Button icon="check" onClick={handleSave}>
+              <Button icon="check" onClick={handleSave} loading={loading}>
                 {modalMode === 'add' ? 'Create Type' : 'Save Changes'}
               </Button>
             </>
@@ -182,18 +267,13 @@ export const EmploymentTypesPage = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg">
-                {selectedItem.name[0]}
+                {selectedItem.name?.[0] || 'T'}
               </div>
               <div>
                 <h4 className="text-lg font-bold text-slate-900">{selectedItem.name}</h4>
-                <p className="text-sm text-slate-500 font-mono">{selectedItem.slug}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Jobs</p>
-                <p className="text-xl font-extrabold text-slate-900 mt-1">{selectedItem.jobs}</p>
-              </div>
               <div className="bg-slate-50 rounded-xl p-4">
                 <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Status</p>
                 <p className="mt-1"><Badge tone={statusTone(selectedItem.status)} dot>{selectedItem.status}</Badge></p>
@@ -211,12 +291,7 @@ export const EmploymentTypesPage = () => {
               placeholder="e.g. Full-time"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-            />
-            <Input
-              label="Slug"
-              placeholder="e.g. fulltime"
-              value={formData.slug}
-              onChange={(e) => handleChange('slug', e.target.value)}
+              required
             />
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>

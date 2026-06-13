@@ -30,6 +30,16 @@ model Category {
   updatedAt DateTime @updatedAt
 }
 
+
+model JobType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique  // Full-Time, Part-Time
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
+
+
 enum Role {
   USER
   ADMIN
