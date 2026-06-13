@@ -7,9 +7,10 @@ import { CategoryModule } from './category/category.module';
 import { JobtypeModule } from './jobtype/jobtype.module';
 import { WorkmodeModule } from './workmode/workmode.module';
 import { ExperienceLevelModule } from './experience-level/experience-level.module';
+import { EducationLevelModule } from './education-level/education-level.module';
 
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule],
+  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule],
   controllers: [AppController],
   providers: [AppService],
 })

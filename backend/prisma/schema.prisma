@@ -58,6 +58,17 @@ model ExperienceLevel {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model EducationLevel {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("education_levels")
+}
+
 enum Role {
   USER
   ADMIN

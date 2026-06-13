@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -7,39 +7,60 @@ import { ToneIcon } from '../components/ui/ToneIcon';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
-
-const initialLevels = [
-  { id: 1, name: 'High School', slug: 'highschool', jobs: 87, status: 'active' },
-  { id: 2, name: 'Associate Degree', slug: 'associate', jobs: 124, status: 'active' },
-  { id: 3, name: "Bachelor's Degree", slug: 'bachelors', jobs: 412, status: 'active' },
-  { id: 4, name: "Master's Degree", slug: 'masters', jobs: 256, status: 'active' },
-  { id: 5, name: 'PhD', slug: 'phd', jobs: 78, status: 'active' },
-  { id: 6, name: 'Any', slug: 'any', jobs: 342, status: 'active' },
-];
+import { 
+  getEducationLevels, 
+  createEducationLevel, 
+  updateEducationLevel, 
+  deleteEducationLevel 
+} from '../api/educationLevel';
+import { isAuthenticated, getCurrentUser } from '../api/auth';
 
 const statusTone = (s) => ({ active: 'success', inactive: 'default' }[s] || 'default');
 
-const stats = [
-  { label: 'Total Levels', value: '6', icon: 'book-open', tone: 'primary' },
-  { label: 'Active', value: '6', icon: 'check-circle', tone: 'success' },
-  { label: 'Total Jobs', value: '1,299', icon: 'briefcase', tone: 'info' },
-  { label: 'Most Required', value: "Bachelor's", icon: 'award', tone: 'warning' },
-];
-
 export const EducationLevelsPage = () => {
-  const [levels, setLevels] = useState(initialLevels);
+  const [levels, setLevels] = useState([]);
   const [search, setSearch] = useState('');
-  const [modalMode, setModalMode] = useState(null); // 'add' | 'view' | 'edit' | null
+  const [modalMode, setModalMode] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [formData, setFormData] = useState({ name: '', slug: '', status: 'active' });
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
+  const [formData, setFormData] = useState({ name: '', status: 'active' });
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!isAuthenticated()) {
+      window.location.href = '/login';
+    }
+    fetchEducationLevels();
+  }, []);
+
+  const fetchEducationLevels = async () => {
+    setLoading(true);
+    const result = await getEducationLevels();
+    if (result.success) {
+      setLevels(result.data);
+      updateStats(result.data);
+    } else {
+      console.error('Failed to fetch education levels:', result.error);
+    }
+    setLoading(false);
+  };
+
+  const updateStats = (data) => {
+    const total = data.length;
+    const active = data.filter(l => l.status === 'active').length;
+    const inactive = data.filter(l => l.status === 'inactive').length;
+    
+    setStats({ total, active, inactive });
+  };
 
   const filtered = levels.filter((l) => {
     const s = search.toLowerCase();
-    return !s || l.name.toLowerCase().includes(s) || l.slug.toLowerCase().includes(s);
+    return !s || l.name.toLowerCase().includes(s);
   });
 
   const openAddModal = () => {
-    setFormData({ name: '', slug: '', status: 'active' });
+    setFormData({ name: '', status: 'active' });
     setSelectedItem(null);
     setModalMode('add');
   };
@@ -50,7 +71,7 @@ export const EducationLevelsPage = () => {
   };
 
   const openEditModal = (item) => {
-    setFormData({ name: item.name, slug: item.slug, status: item.status });
+    setFormData({ name: item.name, status: item.status });
     setSelectedItem(item);
     setModalMode('edit');
   };
@@ -60,24 +81,46 @@ export const EducationLevelsPage = () => {
     setSelectedItem(null);
   };
 
-  const handleSave = () => {
-    if (modalMode === 'add') {
-      const newItem = {
-        id: Date.now(),
-        name: formData.name,
-        slug: formData.slug.toLowerCase().replace(/\s+/g, '-'),
-        jobs: 0,
-        status: formData.status,
-      };
-      setLevels([...levels, newItem]);
-    } else if (modalMode === 'edit' && selectedItem) {
-      setLevels(levels.map((l) =>
-        l.id === selectedItem.id
-          ? { ...l, name: formData.name, slug: formData.slug.toLowerCase().replace(/\s+/g, '-'), status: formData.status }
-          : l
-      ));
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      alert('Please enter a level name');
+      return;
     }
-    closeModal();
+
+    setLoading(true);
+
+    if (modalMode === 'add') {
+      const result = await createEducationLevel(formData);
+      if (result.success) {
+        await fetchEducationLevels();
+        closeModal();
+      } else {
+        alert(result.error?.message || 'Failed to create education level');
+      }
+    } else if (modalMode === 'edit' && selectedItem) {
+      const result = await updateEducationLevel(selectedItem.id, formData);
+      if (result.success) {
+        await fetchEducationLevels();
+        closeModal();
+      } else {
+        alert(result.error?.message || 'Failed to update education level');
+      }
+    }
+
+    setLoading(false);
+  };
+
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
+      setLoading(true);
+      const result = await deleteEducationLevel(id);
+      if (result.success) {
+        await fetchEducationLevels();
+      } else {
+        alert(result.error?.message || 'Failed to delete education level');
+      }
+      setLoading(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -95,71 +138,97 @@ export const EducationLevelsPage = () => {
           <p className="text-sm text-slate-500 mt-1">Manage education requirement options (Master Data)</p>
         </div>
         <div className="flex gap-2">
-        
           <Button icon="plus" onClick={openAddModal}>Add Level</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="p-4 flex items-center gap-3">
-            <ToneIcon icon={s.icon} tone={s.tone} size="md" />
-            <div>
-              <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{s.label}</div>
-              <div className="text-xl font-extrabold text-slate-900">{s.value}</div>
-            </div>
-          </Card>
-        ))}
+      {/* Stats Cards - Updated without jobs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 flex items-center gap-3">
+          <ToneIcon icon="book-open" tone="primary" size="md" />
+          <div>
+            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Total Levels</div>
+            <div className="text-xl font-extrabold text-slate-900">{stats.total}</div>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <ToneIcon icon="check-circle" tone="success" size="md" />
+          <div>
+            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Active</div>
+            <div className="text-xl font-extrabold text-slate-900">{stats.active}</div>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3">
+          <ToneIcon icon="x-circle" tone="danger" size="md" />
+          <div>
+            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Inactive</div>
+            <div className="text-xl font-extrabold text-slate-900">{stats.inactive}</div>
+          </div>
+        </Card>
       </div>
 
+      {/* Education Levels Table - Removed slug and jobs columns */}
       <Card>
         <CardHeader title="All Education Levels" subtitle={`${filtered.length} levels found`} />
-        <div className="px-6 pb-4 flex flex-col md:flex-row gap-3">
+        <div className="px-6 pb-4">
           <Input
             placeholder="Search levels..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             icon="search"
-            className="flex-1"
+            className="max-w-sm"
           />
         </div>
         <Table>
           <THead>
             <TR>
               <TH>Level Name</TH>
-              <TH>Slug</TH>
-              <TH>Jobs</TH>
               <TH>Status</TH>
               <TH align="right">Actions</TH>
             </TR>
           </THead>
           <TBody>
-            {filtered.map((l) => (
-              <TR key={l.id}>
-                <TD>
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-xs">
-                      {(l.name[0])}
-                    </div>
-                    <span className="font-semibold text-slate-900">{l.name}</span>
-                  </div>
-                </TD>
-                <TD className="text-sm text-slate-500 font-mono">{l.slug}</TD>
-                <TD><Badge tone="primary" icon="briefcase">{l.jobs}</Badge></TD>
-                <TD><Badge tone={statusTone(l.status)} dot>{l.status}</Badge></TD>
-                <TD align="right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="xs" icon="eye" onClick={() => openViewModal(l)} />
-                    <Button variant="ghost" size="xs" icon="pencil" onClick={() => openEditModal(l)} />
-                    <Button variant="ghost" size="xs" icon="more-vertical" />
-                  </div>
+            {loading && levels.length === 0 ? (
+              <TR>
+                <TD colSpan={3} className="text-center py-8 text-slate-500">
+                  Loading...
                 </TD>
               </TR>
-            ))}
+            ) : filtered.length === 0 ? (
+              <TR>
+                <TD colSpan={3} className="text-center py-8 text-slate-500">
+                  No education levels found
+                </TD>
+              </TR>
+            ) : (
+              filtered.map((l) => (
+                <TR key={l.id}>
+                  <TD>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-xs">
+                        {l.name?.charAt(0) || 'E'}
+                      </div>
+                      <span className="font-semibold text-slate-900">{l.name}</span>
+                    </div>
+                  </TD>
+                  <TD>
+                    <Badge tone={statusTone(l.status)} dot>{l.status}</Badge>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="xs" icon="eye" onClick={() => openViewModal(l)} />
+                      <Button variant="ghost" size="xs" icon="pencil" onClick={() => openEditModal(l)} />
+                      <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => handleDelete(l.id, l.name)} />
+                    </div>
+                  </TD>
+                </TR>
+              ))
+            )}
           </TBody>
         </Table>
       </Card>
 
+      {/* Modal - Removed slug field */}
       <Modal
         open={modalMode !== null}
         onClose={closeModal}
@@ -170,7 +239,7 @@ export const EducationLevelsPage = () => {
           modalMode !== 'view' ? (
             <>
               <Button variant="secondary" onClick={closeModal}>Cancel</Button>
-              <Button icon="check" onClick={handleSave}>
+              <Button icon="check" onClick={handleSave} loading={loading}>
                 {modalMode === 'add' ? 'Create Level' : 'Save Changes'}
               </Button>
             </>
@@ -183,26 +252,21 @@ export const EducationLevelsPage = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-xl bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-lg">
-                {selectedItem.name[0]}
+                {selectedItem.name?.charAt(0) || 'E'}
               </div>
               <div>
                 <h4 className="text-lg font-bold text-slate-900">{selectedItem.name}</h4>
-                <p className="text-sm text-slate-500 font-mono">{selectedItem.slug}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Jobs</p>
-                <p className="text-xl font-extrabold text-slate-900 mt-1">{selectedItem.jobs}</p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-4">
                 <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Status</p>
                 <p className="mt-1"><Badge tone={statusTone(selectedItem.status)} dot>{selectedItem.status}</Badge></p>
               </div>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-4">
-              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">ID</p>
-              <p className="text-sm text-slate-700 mt-1 font-mono">#{selectedItem.id}</p>
+              <div className="bg-slate-50 rounded-xl p-4">
+                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">ID</p>
+                <p className="text-sm text-slate-700 mt-1 font-mono">#{selectedItem.id}</p>
+              </div>
             </div>
           </div>
         ) : (
@@ -212,12 +276,7 @@ export const EducationLevelsPage = () => {
               placeholder="e.g. Bachelor's Degree"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-            />
-            <Input
-              label="Slug"
-              placeholder="e.g. bachelors"
-              value={formData.slug}
-              onChange={(e) => handleChange('slug', e.target.value)}
+              required
             />
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>
