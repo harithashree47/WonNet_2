@@ -5,39 +5,38 @@ import { Icon } from '../ui/Icon';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
-  { id: 'users', label: 'Users', icon: 'users', badge: '12.8k' },
-  { id: 'staff', label: 'Staff Management', icon: 'user-cog' },
-  { id: 'jobs', label: 'Jobs', icon: 'briefcase', badge: '1.2k' },
-  { id: 'companies', label: 'Companies', icon: 'building', badge: '320' },
+  { id: 'users', label: 'Users', icon: 'users' },
+  { id: 'staff', label: 'Staff Management', icon: 'shield' },
+  { id: 'jobs', label: 'Jobs', icon: 'briefcase' },
+  { id: 'companies', label: 'Companies', icon: 'building' },
   { id: 'applications', label: 'Applications', icon: 'file-check' },
   { id: 'analytics', label: 'Analytics', icon: 'bar-chart' },
-  { id: 'messages', label: 'Messages', icon: 'mail', badge: '5' },
+  { id: 'messages', label: 'Messages', icon: 'mail' },
 ];
 
 const masterDataItems = [
   { id: 'categories', label: 'Categories', icon: 'grid' },
   { id: 'experience-levels', label: 'Experience Levels', icon: 'layers' },
   { id: 'employment-types', label: 'Employment Types', icon: 'clipboard' },
-  { id: 'education-levels', label: 'Education Levels', icon: 'book-open' },
+  { id: 'education-levels', label: 'Education Levels', icon: 'award' },
   { id: 'departments', label: 'Departments', icon: 'building' },
 ];
 
 const secondary = [
   { id: 'settings', label: 'Settings', icon: 'settings' },
-  { id: 'help', label: 'Help & Support', icon: 'help-circle' },
 ];
 
 export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
-  const role = user?.role?.toUpperCase();
+  const role = user?.role?.toUpperCase() || '';
   const isSuper = role === 'SUPER_ADMIN';
   const isAdmin = isSuper || role === 'ADMIN';
 
   return (
     <aside
       className={[
-        'fixed lg:static inset-y-0 left-0 z-40',
+        'fixed lg:sticky top-0 h-screen left-0 z-40',
         'flex flex-col bg-white border-r border-slate-200/80',
-        'transition-all duration-300 ease-out',
+        'transition-all duration-300 ease-in-out shadow-sm',
         collapsed ? 'w-20' : 'w-72',
         'lg:translate-x-0',
       ].join(' ')}
@@ -97,12 +96,6 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
                 <Icon name={item.icon} size={16} strokeWidth={2.25} />
               </span>
               {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
-              {!collapsed && item.badge && (
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold group-hover:bg-slate-200 transition-colors">
-                  {item.badge}
-                </span>
-              )}
-              
             </button>
           );
         })}

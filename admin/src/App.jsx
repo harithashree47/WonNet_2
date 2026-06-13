@@ -36,7 +36,6 @@ const PAGE_META = {
   departments: { title: 'Departments', subtitle: 'Manage departments (Master Data)' },
   messages: { title: 'Messages', subtitle: 'Your inbox and conversations' },
   settings: { title: 'Settings', subtitle: 'Manage your account & preferences' },
-  help: { title: 'Help & Support', subtitle: 'Get help and contact support' },
 };
 
 const PlaceholderPage = ({ id }) => (
@@ -95,7 +94,6 @@ const Shell = ({ user, onLogout }) => {
       case 'settings':
         return <SettingsPage user={user} />;
       case 'messages':
-      case 'help':
         return <PlaceholderPage id={active} />;
       default:
         return <DashboardPage onNavigate={setActive} />;

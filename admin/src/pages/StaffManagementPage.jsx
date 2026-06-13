@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { Input, Select } from '../components/ui/Input';
 import { Icon } from '../components/ui/Icon';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Badge } from '../components/ui/Badge';
@@ -12,6 +12,7 @@ import { createAdmin, getCurrentUser, isAuthenticated, getAdmins, updateAdmin, d
 export const StaffManagementPage = () => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [loading, setLoading] = useState(false);
   const [staffList, setStaffList] = useState([]); // Empty array - no hardcoded data
@@ -24,8 +25,9 @@ export const StaffManagementPage = () => {
     name: '',
     email: '',
     password: '',
-    mobile: '',
-    designation: ''
+    mobile: '', // Added mobile field
+    designation: '', // Added designation field
+    status: 'active' // Add status field with a default
   });
 
   // Check authentication and role on component mount
@@ -49,10 +51,13 @@ export const StaffManagementPage = () => {
   };
 
   // Filter staff based on search
-  const filteredStaff = staffList.filter(user => 
-    user.name?.toLowerCase().includes(search.toLowerCase()) || 
-    user.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStaff = staffList.filter(user => {
+    const matchesSearch = user.name?.toLowerCase().includes(search.toLowerCase()) || 
+                         user.email?.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = !statusFilter || user.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,7 +73,7 @@ export const StaffManagementPage = () => {
         await fetchStaff();
         setOpen(false);
         setSelectedStaff(null);
-        setForm({ name: '', email: '', password: '', mobile: '', designation: '' });
+        setForm({ name: '', email: '', password: '', mobile: '', designation: '', status: 'active' });
       }
     } else {
       // Create new admin using the API function
@@ -76,8 +81,8 @@ export const StaffManagementPage = () => {
       
       if (result.success) {
         await fetchStaff();
-        setOpen(false);
-        setForm({ name: '', email: '', password: '', mobile: '', designation: '' });
+        setOpen(false); // Close modal on success
+        setForm({ name: '', email: '', password: '', mobile: '', designation: '', status: 'active' }); // Reset form
       } else {
         alert(result.message || 'Failed to create admin');
       }
@@ -99,7 +104,8 @@ export const StaffManagementPage = () => {
       email: staff.email,
       password: '',
       mobile: staff.mobile,
-      designation: staff.designation
+      designation: staff.designation,
+      status: staff.status // Populate status for editing
     });
     setOpen(true);
   };
@@ -122,8 +128,8 @@ export const StaffManagementPage = () => {
         <Button 
           icon="user-plus" 
           onClick={() => {
-            setSelectedStaff(null);
-            setForm({ name: '', email: '', password: '', mobile: '', designation: '' });
+            setSelectedStaff(null); // Clear selected staff for new creation
+            setForm({ name: '', email: '', password: '', mobile: '', designation: '', status: 'active' }); // Reset form with default status
             setOpen(true);
           }}
         >
@@ -162,19 +168,29 @@ export const StaffManagementPage = () => {
           title="Administrative Accounts" 
           subtitle="Comprehensive list of users with backend access"
         />
-        <div className="px-6 pb-4">
-          <div className="relative max-w-sm">
+        <div className="px-6 pb-4 flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1 max-w-sm">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
               <Icon name="search" size={14} />
             </span>
             <input 
               type="text"
-              placeholder="Search staff members..."
+              placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:bg-white transition-all"
             />
           </div>
+          <Select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' }
+            ]}
+            placeholder="All Status"
+            className="md:w-44"
+          />
         </div>
         <div className="overflow-hidden">
           <Table>
@@ -205,7 +221,7 @@ export const StaffManagementPage = () => {
                     <TD className="text-sm text-slate-600">{staff.designation || 'N/A'}</TD>
                     <TD className="text-sm text-slate-600">{staff.mobile}</TD>
                     <TD>
-                      <Badge tone={staff.role === 'SUPER_ADMIN' ? 'warning' : 'indigo'}>
+                      <Badge tone={staff.role === 'SUPER_ADMIN' ? 'purple' : 'primary'}>
                         {staff.role?.replace('_', ' ')}
                       </Badge>
                     </TD>
@@ -302,6 +318,21 @@ export const StaffManagementPage = () => {
                   onChange={(e) => setForm({...form, password: e.target.value})}
                   required
                 />
+              </div>
+            )}
+            {/* Status Dropdown */}
+            {selectedStaff && ( // Only show status dropdown when editing
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">Status *</label>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({...form, status: e.target.value})}
+                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
             )}
           </div>
