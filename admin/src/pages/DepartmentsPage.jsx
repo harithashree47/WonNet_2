@@ -19,6 +19,9 @@ const statusTone = (s) => ({ active: 'success', inactive: 'default' }[s] || 'def
 
 export const DepartmentsPage = () => {
   const [open, setOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState(null);
@@ -59,7 +62,6 @@ export const DepartmentsPage = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // ADD THIS FUNCTION - handleSubmit for form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
@@ -83,9 +85,7 @@ export const DepartmentsPage = () => {
     setLoading(false);
   };
 
-  // ADD THIS FUNCTION - handleSave for modal button
   const handleSave = () => {
-    // Trigger the form submission
     const formEvent = new Event('submit', { bubbles: true });
     const formElement = document.getElementById('department-form');
     if (formElement) {
@@ -98,23 +98,34 @@ export const DepartmentsPage = () => {
     setForm({ name: '', status: 'active' });
   };
 
+  const handleView = (department) => {
+    setSelectedDepartment(department);
+    setViewOpen(true);
+  };
+
   const handleEdit = (department) => {
     setSelectedDepartment(department);
     setForm({ name: department.name, status: department.status });
     setOpen(true);
   };
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete department "${name}"?`)) {
-      setLoading(true);
-      const result = await deleteDepartment(id);
-      if (result.success) {
-        await fetchDepartments();
-      } else {
-        alert(result.error?.message || 'Failed to delete department');
-      }
-      setLoading(false);
+  const confirmDelete = (department) => {
+    setDeleteTarget(department);
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setLoading(true);
+    const result = await deleteDepartment(deleteTarget.id);
+    if (result.success) {
+      await fetchDepartments();
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    } else {
+      alert(result.error?.message || 'Failed to delete department');
     }
+    setLoading(false);
   };
 
   return (
@@ -223,8 +234,9 @@ export const DepartmentsPage = () => {
                     </TD>
                     <TD align="right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="xs" icon="eye" onClick={() => handleView(d)} />
                         <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(d)} />
-                        <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => handleDelete(d.id, d.name)} />
+                        <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => confirmDelete(d)} />
                       </div>
                     </TD>
                   </TR>
@@ -234,6 +246,38 @@ export const DepartmentsPage = () => {
           </Table>
         </div>
       </Card>
+
+      {/* View Department Modal */}
+      <Modal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        title="Department Details"
+        subtitle="View complete department information"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+          </>
+        }
+      >
+        {selectedDepartment && (
+          <div className="text-center py-4 space-y-4">
+            <div className="flex justify-center">
+              <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center">
+                <span className="text-lg font-bold text-cyan-700">{selectedDepartment.name?.charAt(0) || 'D'}</span>
+              </div>
+            </div>
+            <p className="text-base font-bold text-slate-900">{selectedDepartment.name}</p>
+            <p className="text-xs font-bold text-slate-500 -mt-2">Department Information</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-2 py-2">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Status</span>
+                <Badge tone={statusTone(selectedDepartment.status)} dot>{selectedDepartment.status}</Badge>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Add/Edit Department Modal */}
       <Modal
@@ -275,6 +319,42 @@ export const DepartmentsPage = () => {
             )}
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        open={deleteOpen}
+        onClose={() => { if (!loading) { setDeleteOpen(false); setDeleteTarget(null); } }}
+        title="Delete Department"
+        subtitle="This action cannot be undone"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setDeleteOpen(false); setDeleteTarget(null); }} disabled={loading}>
+              Cancel
+            </Button>
+            <Button icon="trash-2" className="!bg-rose-600 hover:!bg-rose-700" onClick={handleDelete} loading={loading}>
+              Delete Department
+            </Button>
+          </>
+        }
+      >
+        {deleteTarget && (
+          <div className="text-center py-4">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-50 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-slate-900 mb-1">
+              Delete "{deleteTarget.name}"?
+            </p>
+            <p className="text-xs text-slate-500">
+              This will permanently remove this department<br />and all associated data from the system.
+            </p>
+          </div>
+        )}
       </Modal>
     </div>
   );
