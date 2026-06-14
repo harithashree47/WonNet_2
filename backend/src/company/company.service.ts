@@ -8,27 +8,28 @@ export class CompanyService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateCompanyDto) {
-    try {
-      return await this.prisma.company.create({
-        data: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          website: data.website,
-          locationId: data.locationId,
-          status: data.status || 'active',
-        },
-        include: {
-          location: true, // Include location details in response
-        },
-      });
-    } catch (error) {
-      if (error.code === 'P2002') {
-        throw new BadRequestException('Company name already exists');
-      }
-      throw error;
+  try {
+    return await this.prisma.company.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        website: data.website,
+        logo: data.logo,  // ← ADD THIS
+        locationId: data.locationId,
+        status: data.status || 'active',
+      },
+      include: { location: true },
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      throw new BadRequestException('Company name already exists');
     }
+    throw error;
   }
+}
+
+
 
   async findAll() {
     return this.prisma.company.findMany({
@@ -52,37 +53,32 @@ export class CompanyService {
     return company;
   }
 
-  async update(id: number, data: UpdateCompanyDto) {
-    await this.findOne(id);
-    try {
-      return await this.prisma.company.update({
-        where: { id },
-        data: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          website: data.website,
-          locationId: data.locationId,
-          status: data.status,
-        },
-        include: {
-          location: true,
-        },
-      });
-    } catch (error) {
-      throw new BadRequestException('Failed to update company');
-    }
+  
+async update(id: number, data: UpdateCompanyDto) {
+  await this.findOne(id);
+  try {
+    return await this.prisma.company.update({
+      where: { id },
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        website: data.website,
+        logo: data.logo,  // ← ADD THIS
+        locationId: data.locationId,
+        status: data.status,
+      },
+      include: { location: true },
+    });
+  } catch (error) {
+    throw new BadRequestException('Failed to update company');
   }
-
+}
   async remove(id: number) {
     await this.findOne(id);
     try {
-      return await this.prisma.company.update({
+      return await this.prisma.company.delete({
         where: { id },
-        data: { status: 'inactive' },
-        include: {
-          location: true,
-        },
       });
     } catch (error) {
       throw new BadRequestException('Failed to remove company');

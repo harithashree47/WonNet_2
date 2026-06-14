@@ -101,6 +101,7 @@ model Company {
   email      String?
   phone      String?
   website    String?
+  logo       String?
   locationId Int?
   status     String   @default("active")
   createdAt  DateTime @default(now())

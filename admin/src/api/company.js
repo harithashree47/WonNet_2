@@ -1,4 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = (import.meta.env.VITE_BASE_URL || 'http://localhost:3000')
+  .toString()
+  .trim()
+  .replace(/^['"]|['"]$/g, '');
 
 const handleResponse = async (response) => {
   const data = await response.json();

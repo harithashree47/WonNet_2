@@ -6,22 +6,27 @@ export class CreateCompanyDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ required: false, example: 'contact@techcorp.com' })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsEmail()
   email?: string;
 
-  @ApiProperty({ required: false, example: '+1 234 567 8900' })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiProperty({ required: false, example: 'https://techcorp.com' })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   website?: string;
 
-  @ApiProperty({ required: false, example: 1 })
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  logo?: string;  
+
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsInt()
   locationId?: number;

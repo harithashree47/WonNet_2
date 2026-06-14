@@ -1,5 +1,8 @@
 // src/api/auth.js
-const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = (import.meta.env.VITE_BASE_URL || 'http://localhost:3000')
+  .toString()
+  .trim()
+  .replace(/^['"]|['"]$/g, '');
 
 // Helper function for handling responses
 const handleResponse = async (response) => {

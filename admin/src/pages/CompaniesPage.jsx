@@ -15,16 +15,37 @@ import {
 } from '../api/company';
 import { getActiveLocations } from '../api/location';
 import { isAuthenticated, getCurrentUser } from '../api/auth';
+import { uploadImage } from '../api/upload'; 
 
 const statusTone = (s) => ({ active: 'success', inactive: 'default' }[s] || 'default');
+
+// Helper to resolve image paths
+const getLogoUrl = (path) => {
+  if (!path || typeof path !== 'string') return null;
+  
+  if (path.startsWith('http://') || path.startsWith('https://') || 
+      path.startsWith('data:') || path.startsWith('blob:')) {
+    return path;
+  }
+
+  const baseUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || 'http://localhost:3000')
+    .toString()
+    .trim()
+    .replace(/^['"]|['"]$/g, '');
+  const cleanPath = path.replace(/^\/+/, '');
+  return `${baseUrl}/${cleanPath}`;
+};
 
 export const CompaniesPage = () => {
   const [open, setOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [companies, setCompanies] = useState([]);
   const [locations, setLocations] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
@@ -34,6 +55,9 @@ export const CompaniesPage = () => {
     phone: '',
     website: '',
     locationId: '',
+    logo: '',
+    logoFile: null,
+    logoPreview: '',
     status: 'active'
   });
 
@@ -50,8 +74,12 @@ export const CompaniesPage = () => {
     setLoading(true);
     const result = await getCompanies();
     if (result.success) {
-      setCompanies(result.data);
-      updateStats(result.data);
+      const processedData = result.data.map(company => ({
+        ...company,
+        logo: company.logo ? getLogoUrl(company.logo) : null
+      }));
+      setCompanies(processedData);
+      updateStats(processedData);
     }
     setLoading(false);
   };
@@ -78,6 +106,59 @@ export const CompaniesPage = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // ✅ FIXED: Image upload with preview
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // Create local preview URL immediately
+    const localPreviewUrl = URL.createObjectURL(file);
+    
+    // Update form with local preview FIRST (this will show immediately)
+    setForm(prev => ({ 
+      ...prev, 
+      logoPreview: localPreviewUrl, 
+      logoFile: file,
+      logo: '' // Clear any existing logo while uploading
+    }));
+
+    // Then upload to server
+    setUploading(true);
+    try {
+      const result = await uploadImage(file);
+      
+      if (result.success) {
+        const imageUrl = result.url || result.data?.url;
+        const fullUrl = imageUrl.startsWith('http') ? imageUrl : getLogoUrl(imageUrl);
+        // Update with server URL after upload completes
+        setForm(prev => ({ 
+          ...prev, 
+          logo: fullUrl,
+          logoPreview: fullUrl // Use server URL for preview
+        }));
+      } else {
+        alert(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
@@ -92,6 +173,7 @@ export const CompaniesPage = () => {
       phone: form.phone || undefined,
       website: form.website || undefined,
       locationId: form.locationId ? parseInt(form.locationId) : undefined,
+      logo: form.logo || undefined,
       status: form.status
     };
 
@@ -126,6 +208,9 @@ export const CompaniesPage = () => {
       phone: '',
       website: '',
       locationId: '',
+      logo: '',
+      logoFile: null,
+      logoPreview: '',
       status: 'active'
     });
   };
@@ -138,6 +223,9 @@ export const CompaniesPage = () => {
       phone: company.phone || '',
       website: company.website || '',
       locationId: company.locationId?.toString() || '',
+      logo: company.logo || '',
+      logoFile: null,
+      logoPreview: company.logo || '',
       status: company.status
     });
     setOpen(true);
@@ -148,17 +236,23 @@ export const CompaniesPage = () => {
     setViewOpen(true);
   };
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete company "${name}"?`)) {
-      setLoading(true);
-      const result = await deleteCompany(id);
-      if (result.success) {
-        await fetchCompanies();
-      } else {
-        alert(result.error?.message || 'Failed to delete company');
-      }
-      setLoading(false);
+  const confirmDelete = (company) => {
+    setDeleteTarget(company);
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setLoading(true);
+    const result = await deleteCompany(deleteTarget.id);
+    if (result.success) {
+      await fetchCompanies();
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    } else {
+      alert(result.error?.message || 'Failed to delete company');
     }
+    setLoading(false);
   };
 
   const getLocationDisplay = (company) => {
@@ -233,6 +327,7 @@ export const CompaniesPage = () => {
           <Table>
             <THead>
               <TR>
+                <TH className="w-20">Logo</TH>
                 <TH>Company Name</TH>
                 <TH>Email</TH>
                 <TH>Phone</TH>
@@ -244,7 +339,7 @@ export const CompaniesPage = () => {
             <TBody>
               {loading && companies.length === 0 ? (
                 <TR>
-                  <TD colSpan={6} className="text-center py-8 text-slate-500">
+                  <TD colSpan={7} className="text-center py-8 text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -253,7 +348,7 @@ export const CompaniesPage = () => {
                 </TR>
               ) : filteredCompanies.length === 0 ? (
                 <TR>
-                  <TD colSpan={6} className="text-center py-8 text-slate-500">
+                  <TD colSpan={7} className="text-center py-8 text-slate-500">
                     No companies found
                   </TD>
                 </TR>
@@ -261,10 +356,20 @@ export const CompaniesPage = () => {
                 filteredCompanies.map((c) => (
                   <TR key={c.id}>
                     <TD>
+                      <div className="w-12 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-sm">
+                        <img 
+                          src={c.logo || 'https://placehold.co/48x40/f1f5f9/94a3b8?text=Logo'} 
+                          alt={c.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { 
+                            e.target.onerror = null;
+                            e.target.src = 'https://placehold.co/48x40/f1f5f9/94a3b8?text=Logo'; 
+                          }}
+                        />
+                      </div>
+                    </TD>
+                    <TD>
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">
-                          {c.name?.charAt(0) || 'C'}
-                        </div>
                         <span className="font-semibold text-slate-900">{c.name}</span>
                       </div>
                     </TD>
@@ -280,7 +385,7 @@ export const CompaniesPage = () => {
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="xs" icon="eye" onClick={() => handleView(c)} />
                         <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(c)} />
-                        <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => handleDelete(c.id, c.name)} />
+                        <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => confirmDelete(c)} />
                       </div>
                     </TD>
                   </TR>
@@ -297,7 +402,7 @@ export const CompaniesPage = () => {
         onClose={() => setViewOpen(false)}
         title="Company Details"
         subtitle="View complete company information"
-        size="lg"
+        size="sm"
         footer={
           <>
             <Button variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
@@ -305,51 +410,52 @@ export const CompaniesPage = () => {
         }
       >
         {selectedCompany && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-16 h-16 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl">
-                {selectedCompany.name?.charAt(0) || 'C'}
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">{selectedCompany.name}</h2>
-                <p className="text-sm text-slate-500">Company Information</p>
+          <div className="text-center py-4 space-y-4">
+            <div className="flex justify-center">
+              <div className="w-24 h-24 rounded-[2rem] bg-white border border-slate-100 flex items-center justify-center shadow-premium overflow-hidden">
+                {selectedCompany.logo ? (
+                  <img
+                    src={selectedCompany.logo}
+                    className="w-full h-full object-cover"
+                    alt={selectedCompany.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://placehold.co/100x100/f1f5f9/94a3b8?text=Logo';
+                    }}
+                  />
+                ) : (
+                  <Icon name="building" size={32} className="text-indigo-500" />
+                )}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Email</p>
-                <p className="text-sm text-slate-800 mt-1">{selectedCompany.email || 'Not provided'}</p>
+            
+            <p className="text-base font-bold text-slate-900">{selectedCompany.name}</p>
+            <p className="text-xs font-bold text-slate-500 -mt-2">Company Information</p>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-2 py-2">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Email</span>
+                <span className="text-xs text-slate-700 max-w-[55%] break-words text-right">{selectedCompany.email || 'Not provided'}</span>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Phone</p>
-                <p className="text-sm text-slate-800 mt-1">{selectedCompany.phone || 'Not provided'}</p>
+              <div className="flex items-center justify-between px-2 py-2">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Phone</span>
+                <span className="text-xs text-slate-700 text-right">{selectedCompany.phone || 'Not provided'}</span>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Website</p>
-                <p className="text-sm text-slate-800 mt-1">
+              <div className="flex items-center justify-between px-2 py-2">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Website</span>
+                <span className="text-xs text-right max-w-[55%] break-words">
                   {selectedCompany.website ? (
-                    <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                      {selectedCompany.website}
-                    </a>
+                    <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{selectedCompany.website}</a>
                   ) : 'Not provided'}
-                </p>
+                </span>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Location</p>
-                <p className="text-sm text-slate-800 mt-1">{getLocationDisplay(selectedCompany)}</p>
+              <div className="flex items-center justify-between px-2 py-2">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Location</span>
+                <span className="text-xs text-slate-700 text-right">{getLocationDisplay(selectedCompany)}</span>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Status</p>
-                <p className="mt-1">
-                  <Badge tone={statusTone(selectedCompany.status)} dot>
-                    {selectedCompany.status}
-                  </Badge>
-                </p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Company ID</p>
-                <p className="text-sm text-slate-800 mt-1 font-mono">#{selectedCompany.id}</p>
+              <div className="flex items-center justify-between px-2 py-2">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Status</span>
+                <Badge tone={statusTone(selectedCompany.status)} dot>{selectedCompany.status}</Badge>
               </div>
             </div>
           </div>
@@ -365,84 +471,184 @@ export const CompaniesPage = () => {
         size="lg"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
             <Button icon="check" onClick={handleSave} loading={loading}>
               {selectedCompany ? 'Save Changes' : 'Create Company'}
             </Button>
           </>
         }
       >
-        <form id="company-form" onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Company Name *</label>
+        <form id="company-form" onSubmit={handleSubmit} className="space-y-6">
+          {/* Logo Upload */}
+          <div>
+            <h3 className="text-base font-semibold mb-4 text-slate-900 text-center">Company Logo</h3>
+            
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              id="logo-upload"
+              disabled={uploading}
+            />
+
+            <div className="flex justify-center">
+              <div
+                onClick={() => document.getElementById('logo-upload')?.click()}
+                className="w-44 h-44 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 flex flex-col items-center justify-center overflow-hidden relative group cursor-pointer"
+              >
+                {form.logoPreview ? (
+                  <>
+                    <img
+                      src={form.logoPreview}
+                      alt="Logo preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-all duration-200 flex items-center justify-center">
+                      <span className="text-white text-xs font-bold opacity-0 hover:opacity-100 uppercase tracking-wider pointer-events-none">Change</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setForm({...form, logo: '', logoPreview: '', logoFile: null});
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 bg-white/90 text-rose-500 rounded-full flex items-center justify-center shadow hover:bg-rose-500 hover:text-white transition-all"
+                    >
+                      <Icon name="x" size={10} strokeWidth={3} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span className="text-xs font-semibold text-slate-500 mt-2">Upload Logo</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Click or drag</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="text-center mt-3">
+              {uploading && (
+                <span className="inline-flex items-center gap-2 text-sm text-indigo-600 font-medium">
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25"/>
+                    <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-75"/>
+                  </svg>
+                  Uploading logo...
+                </span>
+              )}
+              {form.logo && !uploading && (
+                <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 font-medium">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  Logo uploaded successfully
+                </span>
+              )}
+              {!form.logo && !uploading && (
+                <span className="text-xs text-slate-400">PNG, JPG or GIF &bull; Max 5MB</span>
+              )}
+            </div>
+          </div>
+
+          {/* Company Information */}
+          <div>
+            <h3 className="text-base font-semibold mb-4 text-slate-900">Company Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input 
-                placeholder="e.g. Tech Corp" 
+                label="Company Name"
+                placeholder="Enter company name" 
                 value={form.name} 
                 onChange={(e) => setForm({...form, name: e.target.value})} 
                 required 
               />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Email</label>
+              
               <Input 
+                label="Email"
                 type="email"
                 placeholder="contact@company.com" 
                 value={form.email} 
                 onChange={(e) => setForm({...form, email: e.target.value})} 
               />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Phone</label>
+              
               <Input 
+                label="Phone"
                 placeholder="+1 234 567 8900" 
                 value={form.phone} 
                 onChange={(e) => setForm({...form, phone: e.target.value})} 
               />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Website</label>
+              
               <Input 
+                label="Website"
                 placeholder="https://company.com" 
                 value={form.website} 
                 onChange={(e) => setForm({...form, website: e.target.value})} 
               />
+              
+              <Select 
+                label="Location"
+                value={form.locationId}
+                onChange={(e) => setForm({...form, locationId: e.target.value})}
+                options={locations.map((loc) => ({ value: loc.id, label: `${loc.city}, ${loc.state}` }))}
+                placeholder="Select location"
+              />
+              
+              {selectedCompany && (
+                <Select 
+                  label="Status"
+                  value={form.status}
+                  onChange={(e) => setForm({...form, status: e.target.value})}
+                  options={[
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' }
+                  ]}
+                />
+              )}
             </div>
           </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500">Location</label>
-            <select
-              value={form.locationId}
-              onChange={(e) => setForm({...form, locationId: e.target.value})}
-              className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="">Select Location</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.city}, {loc.state}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedCompany && (
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({...form, status: e.target.value})}
-                className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          )}
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        open={deleteOpen}
+        onClose={() => { if (!loading) { setDeleteOpen(false); setDeleteTarget(null); } }}
+        title="Delete Company"
+        subtitle="This action cannot be undone"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setDeleteOpen(false); setDeleteTarget(null); }} disabled={loading}>
+              Cancel
+            </Button>
+            <Button icon="trash-2" className="!bg-rose-600 hover:!bg-rose-700" onClick={handleDelete} loading={loading}>
+              Delete Company
+            </Button>
+          </>
+        }
+      >
+        {deleteTarget && (
+          <div className="text-center py-4">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-50 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-slate-900 mb-1">
+              Delete "{deleteTarget.name}"?
+            </p>
+            <p className="text-xs text-slate-500">
+              This will permanently remove this company<br />and all associated data from the system.
+            </p>
+          </div>
+        )}
       </Modal>
     </div>
   );
