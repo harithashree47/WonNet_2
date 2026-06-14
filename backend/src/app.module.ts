@@ -12,8 +12,10 @@ import { LocationModule } from './location/location.module';
 import { DepartmentModule } from './department/department.module';
 import { CompanyModule } from './company/company.module';
 import { UploadModule } from './upload/upload.module';
+import { SkillModule } from './skill/skill.module';
+import { BenefitModule } from './benefit/benefit.module';
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule],
+  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule],
   controllers: [AppController],
   providers: [AppService],
 })

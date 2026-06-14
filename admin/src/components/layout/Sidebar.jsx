@@ -22,6 +22,8 @@ const masterDataItems = [
   { id: 'locations', label: 'Locations', icon: 'map-pin' },
   { id: 'education-levels', label: 'Education Levels', icon: 'award' },
   { id: 'departments', label: 'Departments', icon: 'building' },
+    { id: 'skills', label: 'Skills', icon: 'code' },          
+  { id: 'benefits', label: 'Benefits', icon: 'gift' },
 ];
 
 const secondary = [

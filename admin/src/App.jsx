@@ -22,6 +22,8 @@ import { Button } from './components/ui/Button';
 import { Badge } from './components/ui/Badge';
 import { ToneIcon } from './components/ui/ToneIcon';
 import LocationsPage from './pages/LocationsPage';
+import SkillsPage from './pages/SkillsPage';
+import BenefitsPage from './pages/BenefitsPage';
 
 const PAGE_META = {
   dashboard: { title: 'Dashboard', subtitle: "Here's what's happening today" },
@@ -35,6 +37,14 @@ const PAGE_META = {
   'experience-levels': { title: 'Experience Levels', subtitle: 'Manage experience level options (Master Data)' },
   'employment-types': { title: 'Employment Types', subtitle: 'Manage employment type options (Master Data)' },
   'work-modes': { title: 'Work Modes', subtitle: 'Manage work arrangement options (Remote, On-site, Hybrid)' }, 
+  'skills': { 
+  title: 'Skills', 
+  subtitle: 'Manage job skills and competencies (Master Data)' 
+},
+'benefits': { 
+  title: 'Benefits', 
+  subtitle: 'Manage employee benefits and perks (Master Data)' 
+},
   'locations': { 
   title: 'Locations', 
   subtitle: 'Manage job locations (State & City)' 
@@ -98,6 +108,10 @@ const Shell = ({ user, onLogout }) => {
         return <WorkModePage />;
       case 'locations':
         return <LocationsPage />;
+      case 'skills':
+         return <SkillsPage />;
+      case 'benefits':
+         return <BenefitsPage />;
       case 'education-levels':
         return <EducationLevelsPage />;
       case 'departments':
