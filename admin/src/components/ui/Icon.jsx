@@ -6,7 +6,7 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, Search, X, ChevronLeft, ChevronRight, ChevronDown,
   ChevronsLeft, ChevronsRight, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight,
   Check, Download, Upload, Filter, RotateCcw, Save, Send, Bell, LogOut, User, UserPlus,
-  Menu, Camera, MoreVertical, Sparkles, Crown, Sun, Moon, Star, Rocket, Bookmark, Grid, Layers, Award,
+  Menu, Camera, MoreVertical, Sparkles, Crown, Sun, Moon, Star, Rocket, Bookmark, Grid, Layers, Award, Code, Gift,
   // Status / categories
   CheckCircle2, Clock, XCircle, AlertTriangle, CirclePause, ThumbsUp, MessageSquare, UserCheck, UserX,
   Trophy, ClipboardList, Tag, FileText, Hash,
@@ -209,6 +209,8 @@ const aliasMap = {
   'file-text': FileText,
   'bookmark': Bookmark,
   'award': Award,
+  'code': Code,
+  'gift': Gift,
   'rotate-cw': RotateCcw,
   'help-circle': HelpCircle,
   'send': Send,

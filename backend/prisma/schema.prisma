@@ -19,6 +19,8 @@ model User {
   status    String   @default("active")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  applications Application[]
 }
 
 model Category {
@@ -28,6 +30,8 @@ model Category {
   status    String   @default("active")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+    jobs Job[]
 }
 
 
@@ -37,6 +41,8 @@ model JobType {
   status    String   @default("active")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+    jobs Job[]
 } 
 
 model WorkMode {
@@ -45,6 +51,8 @@ model WorkMode {
   status String @default("active")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+    jobs Job[]
 } 
 
 model ExperienceLevel {
@@ -57,6 +65,8 @@ model ExperienceLevel {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+    jobs Job[]
 }
 
 model EducationLevel {
@@ -67,6 +77,8 @@ model EducationLevel {
   updatedAt DateTime @updatedAt
 
   @@map("education_levels")
+
+    jobs Job[]
 }
 
 model Location {
@@ -78,6 +90,7 @@ model Location {
   updatedAt DateTime @updatedAt
 
    companies Company[]
+     jobs Job[]
 
   @@unique([state, city])
   @@map("locations")
@@ -92,6 +105,8 @@ model Department {
   updatedAt DateTime @updatedAt
 
   @@map("departments")
+
+    jobs Job[]
 }
 
 
@@ -109,6 +124,8 @@ model Company {
 
   location   Location? @relation(fields: [locationId], references: [id])
 
+  jobs Job[]
+
   @@map("companies")
 }
 
@@ -121,6 +138,8 @@ model Skill {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  jobSkills JobSkill[]
+
   @@map("skills")
 }
 
@@ -132,8 +151,99 @@ model Benefit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  jobBenefits JobBenefit[]
+
   @@map("benefits")
 }
+
+model Job {
+  id              Int      @id @default(autoincrement())
+
+  title           String
+  description     String
+
+  responsibilities String?
+  qualifications  String?
+
+ 
+  companyId       Int
+  categoryId      Int
+  jobTypeId       Int
+  workModeId      Int
+  experienceLevelId Int
+  educationLevelId Int?
+  locationId      Int
+  departmentId    Int?
+
+  
+  company         Company         @relation(fields: [companyId], references: [id])
+  category        Category        @relation(fields: [categoryId], references: [id])
+  jobType         JobType         @relation(fields: [jobTypeId], references: [id])
+  workMode        WorkMode        @relation(fields: [workModeId], references: [id])
+  experienceLevel ExperienceLevel @relation(fields: [experienceLevelId], references: [id])
+  educationLevel  EducationLevel? @relation(fields: [educationLevelId], references: [id])
+  location        Location        @relation(fields: [locationId], references: [id])
+  department      Department?     @relation(fields: [departmentId], references: [id])
+
+  
+  vacancies       Int      @default(1)
+  salaryMin       Int?
+  salaryMax       Int?
+  currency        String   @default("INR")
+  applyDeadline   DateTime?
+  status          String   @default("draft")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Many-to-Many
+  skills          JobSkill[]
+  benefits        JobBenefit[]
+
+  applications    Application[]
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([locationId])
+}
+
+model JobSkill {
+  jobId   Int
+  skillId Int
+
+  job     Job   @relation(fields: [jobId], references: [id])
+  skill   Skill @relation(fields: [skillId], references: [id])
+
+  @@id([jobId, skillId])
+}
+
+
+model JobBenefit {
+  jobId     Int
+  benefitId Int
+
+  job       Job     @relation(fields: [jobId], references: [id])
+  benefit   Benefit @relation(fields: [benefitId], references: [id])
+
+  @@id([jobId, benefitId])
+}
+
+
+model Application {
+  id        Int      @id @default(autoincrement())
+
+  jobId     Int
+  userId    Int
+
+  resumeUrl String?
+  status    String   @default("applied")
+
+  createdAt DateTime @default(now())
+
+  job       Job  @relation(fields: [jobId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
+}
+
 enum Role {
   USER
   ADMIN

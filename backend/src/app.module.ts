@@ -14,8 +14,9 @@ import { CompanyModule } from './company/company.module';
 import { UploadModule } from './upload/upload.module';
 import { SkillModule } from './skill/skill.module';
 import { BenefitModule } from './benefit/benefit.module';
+import { JobModule } from './job/job.module';
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule],
+  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule, JobModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input, Textarea, Select } from '../components/ui/Input';
@@ -8,84 +8,40 @@ import { ToneIcon } from '../components/ui/ToneIcon';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
-import { recentJobs } from '../data/mockData';
+import { getJobs, createJob, updateJob, deleteJob, updateJobStatus } from '../api/job';
+import { getCompanies } from '../api/company';
+import { getCategories } from '../api/category';
+import { getActiveJobTypes } from '../api/jobType';
+import { getActiveWorkModes } from '../api/workMode';
+import { getActiveExperienceLevels } from '../api/experienceLevel';
+import { getActiveEducationLevels } from '../api/educationLevel';
+import { getActiveLocations } from '../api/location';
+import { getActiveDepartments } from '../api/department';
+import { getActiveSkills } from '../api/skill';
+import { getActiveBenefits } from '../api/benefit';
+import { isAuthenticated, getCurrentUser } from '../api/auth';
 
-const statusTone = (s) => ({ active: 'success', pending: 'warning', closed: 'default' }[s] || 'default');
+const statusTone = (s) => {
+  const tones = { published: 'success', draft: 'warning', closed: 'default' };
+  return tones[s] || 'default';
+};
 
-const jobStats = [
-  { label: 'Total Jobs', value: '1,254', icon: 'briefcase', tone: 'primary' },
-  { label: 'Active', value: '892', icon: 'check-circle', tone: 'success' },
-  { label: 'Pending Review', value: '48', icon: 'clock', tone: 'warning' },
-  { label: 'Closed', value: '314', icon: 'x-circle', tone: 'danger' },
-];
+const getLogoUrl = (path) => {
+  if (!path || typeof path !== 'string') return null;
+  if (path.startsWith('http://') || path.startsWith('https://') || 
+      path.startsWith('data:') || path.startsWith('blob:')) {
+    return path;
+  }
+  const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+  const cleanPath = path.replace(/^\/+/, '');
+  return `${baseUrl}/${cleanPath}`;
+};
 
 const STEPS = [
   { id: 'basics', label: 'Basic Info', desc: 'Role, company & location', icon: 'file-text' },
   { id: 'details', label: 'Job Details', desc: 'Description & requirements', icon: 'briefcase' },
   { id: 'pay', label: 'Pay & Perks', desc: 'Compensation & benefits', icon: 'dollar-sign' },
   { id: 'review', label: 'Review', desc: 'Final checklist', icon: 'check' },
-];
-
-const initialJobState = {
-  title: '',
-  company: '',
-  category: '',
-  type: 'fulltime',
-  location: '',
-  remoteOption: 'office',
-  description: '',
-  responsibilities: '',
-  qualifications: '',
-  experience: 'mid',
-  skills: [],
-  salaryMin: '',
-  salaryMax: '',
-  currency: 'USD',
-  applyDeadline: '',
-  vacancies: '1',
-  benefits: [],
-  education: 'bachelors',
-  department: '',
-};
-
-const CATEGORIES = [
-  { value: 'engineering', label: 'Engineering' },
-  { value: 'design', label: 'Design' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'sales', label: 'Sales' },
-  { value: 'hr', label: 'Human Resources' },
-  { value: 'finance', label: 'Finance' },
-  { value: 'operations', label: 'Operations' },
-  { value: 'legal', label: 'Legal' },
-  { value: 'product', label: 'Product' },
-  { value: 'other', label: 'Other' },
-];
-
-const BENEFITS = ['Health Insurance', 'Dental', 'Vision', '401(k) Match', 'Remote Work', 'Flexible Hours', 'Stock Options', 'Unlimited PTO', 'Gym', 'Learning Budget', 'Free Meals', 'Parental Leave'];
-
-const TYPE_OPTIONS = [
-  { value: 'fulltime', label: 'Full-time' },
-  { value: 'parttime', label: 'Part-time' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'internship', label: 'Internship' },
-  { value: 'freelance', label: 'Freelance' },
-];
-
-const EXP_OPTIONS = [
-  { value: 'entry', label: 'Entry Level' },
-  { value: 'mid', label: 'Mid Level' },
-  { value: 'senior', label: 'Senior Level' },
-  { value: 'lead', label: 'Lead / Manager' },
-  { value: 'director', label: 'Director+' },
-];
-
-const EDU_OPTIONS = [
-  { value: 'highschool', label: 'High School' },
-  { value: 'associate', label: 'Associate Degree' },
-  { value: 'bachelors', label: "Bachelor's Degree" },
-  { value: 'masters', label: "Master's Degree" },
-  { value: 'phd', label: 'PhD' },
-  { value: 'any', label: 'Any' },
 ];
 
 const CURRENCY_OPTIONS = [
@@ -95,270 +51,313 @@ const CURRENCY_OPTIONS = [
   { value: 'GBP', label: '£ GBP' },
 ];
 
-/* ─── Tag Input ─── */
-const SkillInput = ({ tags, onChange }) => {
-  const [v, setV] = useState('');
-  const ref = useRef(null);
-
-  const add = useCallback(() => {
-    const t = v.trim();
-    if (!t || tags.includes(t)) return;
-    onChange([...tags, t]);
-    setV('');
-  }, [v, tags, onChange]);
-
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Required Skills</label>
-      <div
-        onClick={() => ref.current?.focus()}
-        className="flex flex-wrap items-center gap-1.5 p-2.5 min-h-[44px] rounded-xl border border-slate-200 focus-within:border-indigo-400 focus-within:bg-indigo-50/30 transition-all cursor-text bg-slate-50/30"
-      >
-        {tags.map((t, i) => (
-          <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium">
-            {t}
-            <button type="button" onClick={() => onChange(tags.filter((_, j) => j !== i))} className="hover:text-indigo-900 transition-colors ml-0.5">
-              <Icon name="x" size={10} strokeWidth={3} />
-            </button>
-          </span>
-        ))}
-        <input
-          ref={ref}
-          value={v}
-          onChange={(e) => setV(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(); }
-            if (e.key === 'Backspace' && !v && tags.length) onChange(tags.slice(0, -1));
-          }}
-          onBlur={add}
-          placeholder={tags.length ? '' : 'Type skill & press Enter...'}
-          className="flex-1 min-w-[100px] outline-none text-sm bg-transparent text-slate-700 placeholder:text-slate-400 py-0.5"
-        />
-      </div>
-    </div>
-  );
-};
-
-/* ─── Benefit Chips ─── */
-const BenefitChips = ({ value, onChange }) => (
-  <div>
-    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Benefits & Perks</label>
-    <div className="flex flex-wrap gap-2">
-      {BENEFITS.map((b) => {
-        const active = value.includes(b);
-        return (
-          <button
-            key={b}
-            type="button"
-            onClick={() => onChange(active ? value.filter((v) => v !== b) : [...value, b])}
-            className={[
-              active
-                ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50',
-              'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-            ].join(' ')}
-          >
-            {active && <Icon name="check" size={10} className="inline mr-1" />}{b}
-          </button>
-        );
-      })}
-    </div>
-  </div>
-);
-
-/* ─── Remote toggle ─── */
-const RemoteToggle = ({ value, onChange }) => {
-  const opts = [
-    { value: 'office', label: 'On-site', icon: 'building' },
-    { value: 'hybrid', label: 'Hybrid', icon: 'activity' },
-    { value: 'remote', label: 'Remote', icon: 'globe' },
-  ];
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Work Arrangement</label>
-      <div className="grid grid-cols-3 gap-2">
-        {opts.map((o) => {
-          const active = value === o.value;
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => onChange(o.value)}
-              className={[
-                'flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border',
-                active
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50',
-              ].join(' ')}
-            >
-              <Icon name={o.icon} size={14} /> {o.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-/* ─── Salary Range ─── */
-const SalaryInputs = ({ min, max, onMin, onMax, currency, onCurrency, error }) => (
-  <div>
-    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Salary Range</label>
-    <div className="flex items-center gap-2">
-      <select value={currency} onChange={(e) => onCurrency(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 outline-none focus:border-indigo-400 cursor-pointer">
-        {CURRENCY_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      <input type="number" value={min} onChange={onMin} placeholder="Min" className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:border-indigo-400 transition-all" />
-      <span className="text-slate-300">—</span>
-      <input type="number" value={max} onChange={onMax} placeholder="Max" className={['flex-1 px-3 py-2 rounded-lg border bg-white text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all', error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-indigo-400'].join(' ')} />
-    </div>
-    {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
-  </div>
-);
-
-/* ─── Preview Card ─── */
-const JobCardPreview = ({ form }) => {
-  const hasData = form.title || form.company || form.description;
-  return (
-    <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
-      <div className="p-4">
-        {hasData ? (
-          <>
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                  {(form.company || 'C')[0]}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900">{form.title || 'Job Title'}</h3>
-                  <p className="text-xs text-slate-500">{form.company || 'Company'}</p>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-xs font-medium capitalize">{form.type === 'fulltime' ? 'Full-time' : form.type === 'parttime' ? 'Part-time' : form.type === 'contract' ? 'Contract' : form.type === 'internship' ? 'Internship' : 'Freelance'}</span>
-            </div>
-            <div className="flex flex-wrap gap-3 text-xs text-slate-500 mb-3">
-              <span className="flex items-center gap-1"><Icon name="map-pin" size={12} /> {form.location || 'Location'}</span>
-              <span className="flex items-center gap-1"><Icon name="wallet" size={12} /> {form.salaryMin || form.salaryMax ? `${form.currency === 'USD' ? '$' : '₹'}${form.salaryMin || '0'} - ${form.currency === 'USD' ? '$' : '₹'}${form.salaryMax || '∞'}` : 'Salary not specified'}</span>
-            </div>
-            {form.description && <p className="text-sm text-slate-600 mb-3 line-clamp-2">{form.description}</p>}
-            {form.skills.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {form.skills.slice(0, 3).map((s, i) => <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">{s}</span>)}
-                {form.skills.length > 3 && <span className="px-2 py-0.5 text-xs text-slate-400">+{form.skills.length - 3}</span>}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="py-8 text-center">
-            <Icon name="eye" size={24} className="text-slate-300 mx-auto mb-2" />
-            <p className="text-xs text-slate-400">Preview will appear here</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-/* ─── Step Indicator ─── */
-const StepIndicator = ({ current, total }) => (
-  <div className="flex items-center gap-2 mb-6">
-    {Array.from({ length: total }).map((_, i) => (
-      <div
-        key={i}
-        className={[
-          'flex-1 h-1 rounded-full transition-all duration-500',
-          i <= current ? 'bg-indigo-500' : 'bg-slate-200',
-        ].join(' ')}
-      />
-    ))}
-  </div>
-);
-
-/* ─── Step Label ─── */
-const StepLabel = ({ current, total }) => (
-  <div className="mb-5">
-    <span className="text-xs font-semibold text-indigo-600">Step {current + 1} of {total}</span>
-    <h2 className="text-lg font-bold text-slate-800 mt-0.5">{STEPS[current].label}</h2>
-    <p className="text-xs text-slate-400 mt-0.5">{STEPS[current].desc}</p>
-  </div>
-);
-
-/* ─── Section Card ─── */
-const SectionCard = ({ children, className = '' }) => (
-  <div className={['bg-white rounded-lg border border-slate-200 p-4', className].join(' ')}>
-    {children}
-  </div>
-);
-
-/* ─── Field wrapper ─── */
-const FieldLabel = ({ label, required, children }) => (
-  <div className="space-y-1.5">
-    <label className="block text-xs font-semibold text-slate-500">
-      {label} {required && <span className="text-rose-400 ml-0.5">*</span>}
-    </label>
-    {children}
-  </div>
-);
-
-
-/* ─── Main ─── */
 export const JobsPage = () => {
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
-  const [type, setType] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [view, setView] = useState('grid');
   const [open, setOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [step, setStep] = useState(0);
-  const [f, setF] = useState(initialJobState);
-  const [errs, setErrs] = useState({});
   const [loading, setLoading] = useState(false);
+  const [jobs, setJobs] = useState([]);
+  const [stats, setStats] = useState({ total: 0, published: 0, draft: 0, closed: 0 });
+  
+  // Master data states
+  const [companies, setCompanies] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [jobTypes, setJobTypes] = useState([]);
+  const [workModes, setWorkModes] = useState([]);
+  const [experienceLevels, setExperienceLevels] = useState([]);
+  const [educationLevels, setEducationLevels] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [benefits, setBenefits] = useState([]);
+  
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    responsibilities: '',
+    qualifications: '',
+    companyId: '',
+    categoryId: '',
+    jobTypeId: '',
+    workModeId: '',
+    experienceLevelId: '',
+    educationLevelId: '',
+    locationId: '',
+    departmentId: '',
+    vacancies: '1',
+    salaryMin: '',
+    salaryMax: '',
+    currency: 'INR',
+    applyDeadline: '',
+    status: 'draft',
+    skillIds: [],
+    benefitIds: []
+  });
+  
+  const [errs, setErrs] = useState({});
   const [done, setDone] = useState(false);
 
-  const filtered = recentJobs.filter((j) => {
-    const q = search.toLowerCase();
-    return (!q || j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q)) && (!status || j.status === status) && (!type || j.type === type);
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!isAuthenticated()) {
+      window.location.href = '/login';
+    }
+    fetchJobs();
+    fetchMasterData();
+  }, []);
+
+  const fetchJobs = async () => {
+    setLoading(true);
+    const result = await getJobs();
+    if (result.success) {
+      setJobs(result.data);
+      updateStats(result.data);
+    }
+    setLoading(false);
+  };
+
+  const updateStats = (data) => {
+    setStats({
+      total: data.length,
+      published: data.filter(j => j.status === 'published').length,
+      draft: data.filter(j => j.status === 'draft').length,
+      closed: data.filter(j => j.status === 'closed').length,
+    });
+  };
+
+  const fetchMasterData = async () => {
+    const [companiesRes, categoriesRes, jobTypesRes, workModesRes, expLevelsRes, eduLevelsRes, locationsRes, deptsRes, skillsRes, benefitsRes] = await Promise.all([
+      getCompanies(), getCategories(), getActiveJobTypes(), getActiveWorkModes(),
+      getActiveExperienceLevels(), getActiveEducationLevels(), getActiveLocations(),
+      getActiveDepartments(), getActiveSkills(), getActiveBenefits()
+    ]);
+    
+    if (companiesRes.success) setCompanies(companiesRes.data);
+    if (categoriesRes.success) setCategories(categoriesRes.data);
+    if (jobTypesRes.success) setJobTypes(jobTypesRes.data);
+    if (workModesRes.success) setWorkModes(workModesRes.data);
+    if (expLevelsRes.success) setExperienceLevels(expLevelsRes.data);
+    if (eduLevelsRes.success) setEducationLevels(eduLevelsRes.data);
+    if (locationsRes.success) setLocations(locationsRes.data);
+    if (deptsRes.success) setDepartments(deptsRes.data);
+    if (skillsRes.success) setSkills(skillsRes.data);
+    if (benefitsRes.success) setBenefits(benefitsRes.data);
+  };
+
+  const filteredJobs = jobs.filter(j => {
+    const matchesSearch = j.title.toLowerCase().includes(search.toLowerCase()) ||
+                          (j.company?.name || '').toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = !statusFilter || j.status === statusFilter;
+    const matchesType = !typeFilter || j.jobType?.name === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
-  const upd = (key) => (e) => setF((p) => ({ ...p, [key]: e?.target ? e.target.value : e }));
-
-  const valid = (s) => {
+  const valid = (stepNum) => {
     const e = {};
-    if (s === 0) { if (!f.title.trim()) e.title = 'Required'; if (!f.company.trim()) e.company = 'Required'; if (!f.location.trim()) e.location = 'Required'; }
-    if (s === 1) { if (!f.description || f.description.trim().length < 30) e.desc = 'Need at least 30 characters'; if (f.skills.length === 0) e.skills = 'Add at least one skill'; }
-    if (s === 2) { if (f.salaryMin && f.salaryMax && Number(f.salaryMax) < Number(f.salaryMin)) e.salary = 'Max must be ≥ min'; }
+    if (stepNum === 0) {
+      if (!form.title.trim()) e.title = 'Required';
+      if (!form.companyId) e.companyId = 'Required';
+      if (!form.locationId) e.locationId = 'Required';
+    }
+    if (stepNum === 1) {
+      if (!form.description || form.description.trim().length < 30) e.description = 'Need at least 30 characters';
+      if (form.skillIds.length === 0) e.skillIds = 'Add at least one skill';
+    }
+    if (stepNum === 2) {
+      if (form.salaryMin && form.salaryMax && Number(form.salaryMax) < Number(form.salaryMin)) {
+        e.salary = 'Max must be ≥ min';
+      }
+    }
     setErrs(e);
     return Object.keys(e).length === 0;
   };
 
-  const next = () => { if (valid(step)) setStep((s) => Math.min(s + 1, STEPS.length - 1)); };
-  const back = () => setStep((s) => Math.max(s - 1, 0));
+  const next = () => { if (valid(step)) setStep(s => Math.min(s + 1, STEPS.length - 1)); };
+  const back = () => setStep(s => Math.max(s - 1, 0));
 
-  const submit = () => {
+  const resetForm = () => {
+    setForm({
+      title: '', description: '', responsibilities: '', qualifications: '',
+      companyId: '', categoryId: '', jobTypeId: '', workModeId: '',
+      experienceLevelId: '', educationLevelId: '', locationId: '', departmentId: '',
+      vacancies: '1', salaryMin: '', salaryMax: '', currency: 'INR',
+      applyDeadline: '', status: 'draft', skillIds: [], benefitIds: []
+    });
+    setErrs({});
+    setStep(0);
+  };
+
+  const handleSubmit = async () => {
     if (step !== STEPS.length - 1) { next(); return; }
     if (!valid(step)) return;
+    
     setLoading(true);
-    setTimeout(() => { setLoading(false); setDone(true); }, 900);
+    const submitData = {
+      ...form,
+      vacancies: parseInt(form.vacancies),
+      salaryMin: form.salaryMin ? parseInt(form.salaryMin) : undefined,
+      salaryMax: form.salaryMax ? parseInt(form.salaryMax) : undefined,
+      companyId: parseInt(form.companyId),
+      categoryId: parseInt(form.categoryId),
+      jobTypeId: parseInt(form.jobTypeId),
+      workModeId: parseInt(form.workModeId),
+      experienceLevelId: parseInt(form.experienceLevelId),
+      educationLevelId: form.educationLevelId ? parseInt(form.educationLevelId) : undefined,
+      locationId: parseInt(form.locationId),
+      departmentId: form.departmentId ? parseInt(form.departmentId) : undefined,
+      skillIds: form.skillIds.map(id => parseInt(id)),
+      benefitIds: form.benefitIds.map(id => parseInt(id)),
+    };
+    
+    const result = await createJob(submitData);
+    if (result.success) {
+      await fetchJobs();
+      setDone(true);
+      setTimeout(() => {
+        setOpen(false);
+        setDone(false);
+        resetForm();
+      }, 1500);
+    } else {
+      alert(result.error?.message || 'Failed to create job');
+    }
+    setLoading(false);
   };
 
-  const close = () => {
-    if (loading) return;
-    setOpen(false);
-    setTimeout(() => { setF(initialJobState); setStep(0); setErrs({}); setDone(false); }, 200);
+  const handleUpdate = async () => {
+    if (!valid(step)) return;
+    
+    setLoading(true);
+    const submitData = {
+      ...form,
+      vacancies: parseInt(form.vacancies),
+      salaryMin: form.salaryMin ? parseInt(form.salaryMin) : undefined,
+      salaryMax: form.salaryMax ? parseInt(form.salaryMax) : undefined,
+      companyId: parseInt(form.companyId),
+      categoryId: parseInt(form.categoryId),
+      jobTypeId: parseInt(form.jobTypeId),
+      workModeId: parseInt(form.workModeId),
+      experienceLevelId: parseInt(form.experienceLevelId),
+      educationLevelId: form.educationLevelId ? parseInt(form.educationLevelId) : undefined,
+      locationId: parseInt(form.locationId),
+      departmentId: form.departmentId ? parseInt(form.departmentId) : undefined,
+      skillIds: form.skillIds.map(id => parseInt(id)),
+      benefitIds: form.benefitIds.map(id => parseInt(id)),
+    };
+    
+    const result = await updateJob(selectedJob.id, submitData);
+    if (result.success) {
+      await fetchJobs();
+      setEditOpen(false);
+      resetForm();
+      alert('Job updated successfully!');
+    } else {
+      alert(result.error?.message || 'Failed to update job');
+    }
+    setLoading(false);
   };
+
+  const handleEdit = (job) => {
+    setSelectedJob(job);
+    setForm({
+      title: job.title || '',
+      description: job.description || '',
+      responsibilities: job.responsibilities || '',
+      qualifications: job.qualifications || '',
+      companyId: job.companyId?.toString() || '',
+      categoryId: job.categoryId?.toString() || '',
+      jobTypeId: job.jobTypeId?.toString() || '',
+      workModeId: job.workModeId?.toString() || '',
+      experienceLevelId: job.experienceLevelId?.toString() || '',
+      educationLevelId: job.educationLevelId?.toString() || '',
+      locationId: job.locationId?.toString() || '',
+      departmentId: job.departmentId?.toString() || '',
+      vacancies: job.vacancies?.toString() || '1',
+      salaryMin: job.salaryMin?.toString() || '',
+      salaryMax: job.salaryMax?.toString() || '',
+      currency: job.currency || 'INR',
+      applyDeadline: job.applyDeadline ? job.applyDeadline.split('T')[0] : '',
+      status: job.status || 'draft',
+      skillIds: job.skills?.map(s => s.skill?.id || s.skillId) || [],
+      benefitIds: job.benefits?.map(b => b.benefit?.id || b.benefitId) || []
+    });
+    setStep(0);
+    setEditOpen(true);
+  };
+
+  const handleView = (job) => {
+    setSelectedJob(job);
+    setViewOpen(true);
+  };
+
+  const confirmDelete = (job) => {
+    setDeleteTarget(job);
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setLoading(true);
+    const result = await deleteJob(deleteTarget.id);
+    if (result.success) {
+      await fetchJobs();
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    } else {
+      alert(result.error?.message || 'Failed to delete job');
+    }
+    setLoading(false);
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    const result = await updateJobStatus(id, newStatus);
+    if (result.success) await fetchJobs();
+    else alert(result.error?.message || 'Failed to update status');
+  };
+
+  const upd = (key) => (e) => setForm(p => ({ ...p, [key]: e?.target ? e.target.value : e }));
+
+  const toggleSkill = (skillId) => {
+    setForm(p => ({
+      ...p,
+      skillIds: p.skillIds.includes(skillId)
+        ? p.skillIds.filter(id => id !== skillId)
+        : [...p.skillIds, skillId]
+    }));
+  };
+
+  const toggleBenefit = (benefitId) => {
+    setForm(p => ({
+      ...p,
+      benefitIds: p.benefitIds.includes(benefitId)
+        ? p.benefitIds.filter(id => id !== benefitId)
+        : [...p.benefitIds, benefitId]
+    }));
+  };
+
+  const jobStats = [
+    { label: 'Total Jobs', value: stats.total, icon: 'briefcase', tone: 'primary' },
+    { label: 'Published', value: stats.published, icon: 'check-circle', tone: 'success' },
+    { label: 'Draft', value: stats.draft, icon: 'clock', tone: 'warning' },
+    { label: 'Closed', value: stats.closed, icon: 'x-circle', tone: 'danger' },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Jobs</h1>
           <p className="text-sm text-slate-500 mt-1">Manage all job postings on the platform</p>
         </div>
-        <div className="flex gap-2">
-          <Button icon="plus" onClick={() => setOpen(true)}>Post New Job</Button>
-        </div>
+        <Button icon="plus" onClick={() => { resetForm(); setOpen(true); }}>Post New Job</Button>
       </div>
 
       {/* Stats */}
@@ -376,7 +375,7 @@ export const JobsPage = () => {
 
       {/* Job Listings */}
       <Card>
-        <CardHeader title="All Job Postings" subtitle={`${filtered.length} jobs found`} action={
+        <CardHeader title="All Job Postings" subtitle={`${filteredJobs.length} jobs found`} action={
           <div className="flex bg-slate-100 rounded-lg p-1">
             <button onClick={() => setView('grid')} className={['px-3 py-1.5 rounded-md text-xs font-medium transition', view === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'].join(' ')}>
               <Icon name="grip" size={14} />
@@ -388,273 +387,201 @@ export const JobsPage = () => {
         } />
         <div className="px-6 pb-4 flex flex-col md:flex-row gap-3">
           <Input placeholder="Search jobs..." value={search} onChange={(e) => setSearch(e.target.value)} icon="search" className="flex-1" />
-          <Select value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: 'active', label: 'Active' }, { value: 'pending', label: 'Pending' }, { value: 'closed', label: 'Closed' }]} placeholder="All Status" className="md:w-48" />
-          <Select value={type} onChange={(e) => setType(e.target.value)} options={[{ value: 'Full-time', label: 'Full-time' }, { value: 'Part-time', label: 'Part-time' }, { value: 'Contract', label: 'Contract' }]} placeholder="All Types" className="md:w-48" />
+          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} options={[{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }, { value: 'closed', label: 'Closed' }]} placeholder="All Status" className="md:w-44" />
+          <Select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} options={jobTypes.map(jt => ({ value: jt.name, label: jt.name }))} placeholder="All Types" className="md:w-44" />
         </div>
 
         {view === 'list' ? (
-          <Table><THead><TR><TH>Job</TH><TH>Company</TH><TH>Type</TH><TH>Applicants</TH><TH>Status</TH><TH align="right">Actions</TH></TR></THead><TBody>{filtered.map((j) => (<TR key={j.id}><TD><div className="font-semibold text-slate-900">{j.title}</div><div className="text-xs text-slate-500">{j.location} · {j.salary}</div></TD><TD><div className="flex items-center gap-2"><Avatar name={j.company} size="xs" /><span className="font-medium">{j.company}</span></div></TD><TD><Badge tone="info">{j.type}</Badge></TD><TD><Badge tone="primary" icon="users">{j.applicants}</Badge></TD><TD><Badge tone={statusTone(j.status)} dot>{j.status}</Badge></TD><TD align="right"><div className="flex items-center justify-end gap-1"><Button variant="ghost" size="xs" icon="eye" /><Button variant="ghost" size="xs" icon="pencil" /><Button variant="ghost" size="xs" icon="more-vertical" /></div></TD></TR>))}</TBody></Table>
+          <Table>
+            <THead>
+              <TR>
+                <TH>Job</TH><TH>Company</TH><TH>Type</TH><TH>Applicants</TH><TH>Status</TH><TH align="right">Actions</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {filteredJobs.map((j) => (
+                <TR key={j.id}>
+                  <TD>
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={getLogoUrl(j.company?.logo) || 'https://placehold.co/32x32/f1f5f9/94a3b8?text=Logo'} 
+                        alt={j.company?.name}
+                        className="w-8 h-8 rounded-lg object-cover"
+                        onError={(e) => { e.target.src = 'https://placehold.co/32x32/f1f5f9/94a3b8?text=Logo'; }}
+                      />
+                      <div>
+                        <div className="font-semibold text-slate-900">{j.title}</div>
+                        <div className="text-xs text-slate-500">{j.location?.city}, {j.location?.state} · {j.workMode?.name}</div>
+                      </div>
+                    </div>
+                  </TD>
+                  <TD><div className="flex items-center gap-2"><span className="font-medium">{j.company?.name}</span></div></TD>
+                  <TD><Badge tone="info">{j.jobType?.name}</Badge></TD>
+                  <TD><Badge tone="primary" icon="users">{j._count?.applications || 0}</Badge></TD>
+                  <TD>
+                    <select
+                      value={j.status}
+                      onChange={(e) => handleStatusChange(j.id, e.target.value)}
+                      className="px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="xs" icon="eye" onClick={() => handleView(j)} />
+                      <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(j)} />
+                      <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => confirmDelete(j)} />
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-6 pt-2">
-            {filtered.map((j) => (
+            {filteredJobs.map((j) => (
               <div key={j.id} className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer">
-                <div className="flex items-start justify-between mb-3"><Avatar name={j.company} size="md" /><Badge tone={statusTone(j.status)} dot>{j.status}</Badge></div>
-                <h3 className="text-base font-semibold text-slate-900">{j.title}</h3>
-                <p className="text-sm text-slate-500 mt-1">{j.company}</p>
-                <div className="flex items-center gap-2 mt-3 text-xs text-slate-500"><Icon name="map-pin" size={12} /> {j.location}</div>
-                <div className="flex items-center gap-2 mt-1 text-xs text-slate-500"><Icon name="wallet" size={12} /> {j.salary}</div>
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100"><Badge tone="info" icon="users">{j.applicants} applicants</Badge><span className="text-xs text-slate-500">{j.posted}</span></div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={getLogoUrl(j.company?.logo) || 'https://placehold.co/40x40/f1f5f9/94a3b8?text=Logo'} 
+                      alt={j.company?.name}
+                      className="w-10 h-10 rounded-lg object-cover"
+                      onError={(e) => { e.target.src = 'https://placehold.co/40x40/f1f5f9/94a3b8?text=Logo'; }}
+                    />
+                    <div>
+                      <p className="text-sm font-semibold">{j.company?.name}</p>
+                    </div>
+                  </div>
+                  <Badge tone={statusTone(j.status)} dot>{j.status}</Badge>
+                </div>
+                <h3 className="text-base font-semibold text-slate-900 mt-2">{j.title}</h3>
+                <div className="flex items-center gap-2 mt-3 text-xs text-slate-500"><Icon name="map-pin" size={12} /> {j.location?.city}, {j.location?.state}</div>
+                <div className="flex items-center gap-2 mt-1 text-xs text-slate-500"><Icon name="wallet" size={12} /> {j.salaryMin && j.salaryMax ? `${j.currency === 'USD' ? '$' : '₹'}${j.salaryMin} - ${j.currency === 'USD' ? '$' : '₹'}${j.salaryMax}` : 'Salary not specified'}</div>
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                  <Badge tone="info" icon="users">{j._count?.applications || 0} applicants</Badge>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="xs" icon="eye" onClick={() => handleView(j)} />
+                    <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(j)} />
+                    <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => confirmDelete(j)} />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
       </Card>
 
-      {/* Post New Job Modal */}
-      <Modal 
-        open={open} 
-        onClose={close} 
-        size="lg"
-        title={done ? null : "Post a New Job"}
-        subtitle={done ? null : "Fill in the details to publish a new listing"}
-        footer={done ? null : (
-          <>
-            <Button variant="ghost" onClick={close}>Cancel</Button>
-            <div className="flex-1" />
-            <div className="flex gap-2">
-              {step > 0 && (
-                <Button variant="secondary" onClick={back} disabled={loading}>Back</Button>
-              )}
-              {step < STEPS.length - 1 ? (
-                <Button onClick={next}>Continue</Button>
-              ) : (
-                <Button onClick={submit} loading={loading}>
-                  {loading ? 'Publishing...' : 'Publish Job'}
-                </Button>
-              )}
-            </div>
-          </>
-        )}
-      >
-        {done ? (
-          /* Success State */
-          <div className="py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 mx-auto flex items-center justify-center mb-4">
-              <Icon name="check" size={28} className="text-emerald-600" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">Job Posted!</h3>
-            <p className="text-sm text-slate-500">Your job listing is now live</p>
-            <div className="mt-6 p-3 rounded-lg bg-slate-50 max-w-sm mx-auto text-left">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-indigo-100 flex items-center justify-center">
-                  <Icon name="briefcase" size={14} className="text-indigo-600" />
-                </div>
-                <div>
-                  <span className="font-medium text-sm text-slate-800">{f.title}</span>
-                  <p className="text-xs text-slate-500">{f.company} · {f.location}</p>
-                </div>
+      {/* View Job Modal */}
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Job Details" subtitle="View complete job information" size="lg" footer={<Button variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>}>
+        {selectedJob && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 pb-4 border-b">
+              <img 
+                src={getLogoUrl(selectedJob.company?.logo) || 'https://placehold.co/64x64/f1f5f9/94a3b8?text=Logo'} 
+                alt={selectedJob.company?.name}
+                className="w-16 h-16 rounded-xl object-cover"
+              />
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">{selectedJob.title}</h2>
+                <p className="text-slate-500">{selectedJob.company?.name}</p>
+                <Badge tone={statusTone(selectedJob.status)} dot>{selectedJob.status}</Badge>
               </div>
             </div>
-            <div className="mt-6 flex gap-2 justify-center">
-              <Button variant="outline" onClick={close}>Close</Button>
-              <Button onClick={close}>View Listing</Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Location</p><p className="font-medium">{selectedJob.location?.city}, {selectedJob.location?.state}</p></div>
+              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Job Type</p><p className="font-medium">{selectedJob.jobType?.name}</p></div>
+              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Work Mode</p><p className="font-medium">{selectedJob.workMode?.name}</p></div>
+              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Experience</p><p className="font-medium">{selectedJob.experienceLevel?.label}</p></div>
+              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Salary</p><p className="font-medium">{selectedJob.salaryMin && selectedJob.salaryMax ? `${selectedJob.currency === 'USD' ? '$' : '₹'}${selectedJob.salaryMin} - ${selectedJob.currency === 'USD' ? '$' : '₹'}${selectedJob.salaryMax}` : 'Not specified'}</p></div>
+              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Vacancies</p><p className="font-medium">{selectedJob.vacancies}</p></div>
             </div>
+            <div><p className="text-xs text-slate-500 mb-1">Description</p><p className="text-sm">{selectedJob.description}</p></div>
+            {selectedJob.skills?.length > 0 && (<div><p className="text-xs text-slate-500 mb-1">Skills</p><div className="flex flex-wrap gap-1">{selectedJob.skills.map(s => (<span key={s.id} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">{s.skill?.name}</span>))}</div></div>)}
           </div>
+        )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete Job" subtitle="This action cannot be undone" size="sm" footer={
+        <>
+          <Button variant="ghost" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button icon="trash-2" className="!bg-rose-600 hover:!bg-rose-700" onClick={handleDelete} loading={loading}>Delete Job</Button>
+        </>
+      }>
+        {deleteTarget && (<div className="text-center py-4"><div className="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-50 flex items-center justify-center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e11d48" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><p className="text-sm font-semibold text-slate-900 mb-1">Delete "{deleteTarget.title}"?</p><p className="text-xs text-slate-500">This will permanently remove this job and all associated data.</p></div>)}
+      </Modal>
+
+      {/* Add/Edit Job Modal */}
+      <Modal open={open || editOpen} onClose={() => { setOpen(false); setEditOpen(false); resetForm(); }} size="lg" title={open ? "Post a New Job" : "Edit Job"} subtitle={open ? "Fill in the details to publish a new listing" : "Update job information"} footer={
+        <>
+          <Button variant="ghost" onClick={() => { setOpen(false); setEditOpen(false); resetForm(); }}>Cancel</Button>
+          <div className="flex-1" />
+          <div className="flex gap-2">
+            {step > 0 && <Button variant="secondary" onClick={back} disabled={loading}>Back</Button>}
+            {step < STEPS.length - 1 ? <Button onClick={next}>Continue</Button> : <Button onClick={open ? handleSubmit : handleUpdate} loading={loading}>{loading ? (open ? 'Publishing...' : 'Updating...') : (open ? 'Publish Job' : 'Update Job')}</Button>}
+          </div>
+        </>
+      }>
+        {done ? (
+          <div className="py-12 text-center"><div className="w-16 h-16 rounded-full bg-emerald-100 mx-auto flex items-center justify-center mb-4"><Icon name="check" size={28} className="text-emerald-600" /></div><h3 className="text-lg font-bold text-slate-900 mb-1">Job Posted!</h3><p className="text-sm text-slate-500">Your job listing is now live</p></div>
         ) : (
           <>
-            <StepIndicator current={step} total={STEPS.length} />
-
-            {/* Step Content */}
+            <div className="flex items-center gap-2 mb-6">{STEPS.map((_, i) => (<div key={i} className={['flex-1 h-1 rounded-full transition-all', i <= step ? 'bg-indigo-500' : 'bg-slate-200'].join(' ')} />))}</div>
+            <div className="mb-5"><span className="text-xs font-semibold text-indigo-600">Step {step + 1} of {STEPS.length}</span><h2 className="text-lg font-bold text-slate-800 mt-0.5">{STEPS[step].label}</h2><p className="text-xs text-slate-400 mt-0.5">{STEPS[step].desc}</p></div>
+            
             <div className="min-h-[320px]">
-              <StepLabel current={step} total={STEPS.length} />
-
-              {/* Step 0: Basic Info */}
               {step === 0 && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <FieldLabel label="Job Title" required>
-                        <input
-                          value={f.title}
-                          onChange={upd('title')}
-                          placeholder="e.g. Senior Frontend Engineer"
-                          className={['w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none transition-all', errs.title ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'].join(' ')}
-                        />
-                        {errs.title && <p className="text-xs text-rose-500 mt-1">{errs.title}</p>}
-                      </FieldLabel>
-                    </div>
-                    <div>
-                      <FieldLabel label="Company" required>
-                        <input
-                          value={f.company}
-                          onChange={upd('company')}
-                          placeholder="e.g. TechCorp Inc."
-                          className={['w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none transition-all', errs.company ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'].join(' ')}
-                        />
-                        {errs.company && <p className="text-xs text-rose-500 mt-1">{errs.company}</p>}
-                      </FieldLabel>
-                    </div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Job Title *</label><input value={form.title} onChange={upd('title')} placeholder="e.g. Senior Frontend Engineer" className={`w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none ${errs.title ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'}`} /></div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Company *</label><select value={form.companyId} onChange={upd('companyId')} className={`w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none ${errs.companyId ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'}`}><option value="">Select Company</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <FieldLabel label="Location" required>
-                        <input
-                          value={f.location}
-                          onChange={upd('location')}
-                          placeholder="e.g. San Francisco, CA"
-                          className={['w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none transition-all', errs.location ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'].join(' ')}
-                        />
-                        {errs.location && <p className="text-xs text-rose-500 mt-1">{errs.location}</p>}
-                      </FieldLabel>
-                    </div>
-                    <div>
-                      <FieldLabel label="Department">
-                        <input
-                          value={f.department}
-                          onChange={upd('department')}
-                          placeholder="e.g. Engineering"
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400 transition-all"
-                        />
-                      </FieldLabel>
-                    </div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Location *</label><select value={form.locationId} onChange={upd('locationId')} className={`w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none ${errs.locationId ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'}`}><option value="">Select Location</option>{locations.map(l => <option key={l.id} value={l.id}>{l.city}, {l.state}</option>)}</select></div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Department</label><select value={form.departmentId} onChange={upd('departmentId')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400"><option value="">Select Department</option>{departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
                   </div>
-
-                  <div>
-                    <FieldLabel label="Category">
-                      <select
-                        value={f.category}
-                        onChange={upd('category')}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400 cursor-pointer"
-                      >
-                        <option value="" disabled>Select a category</option>
-                        {CATEGORIES.map((cat) => (
-                          <option key={cat.value} value={cat.value}>{cat.label}</option>
-                        ))}
-                      </select>
-                    </FieldLabel>
-                  </div>
-
+                  <div><label className="block text-xs font-semibold text-slate-500">Category</label><select value={form.categoryId} onChange={upd('categoryId')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400"><option value="">Select Category</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <FieldLabel label="Employment Type">
-                        <select value={f.type} onChange={upd('type')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400">
-                          {TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                      </FieldLabel>
-                    </div>
-                    <div>
-                      <FieldLabel label="Experience Level">
-                        <select value={f.experience} onChange={upd('experience')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400">
-                          {EXP_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                      </FieldLabel>
-                    </div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Employment Type</label><select value={form.jobTypeId} onChange={upd('jobTypeId')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400"><option value="">Select Type</option>{jobTypes.map(jt => <option key={jt.id} value={jt.id}>{jt.name}</option>)}</select></div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Work Mode</label><select value={form.workModeId} onChange={upd('workModeId')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400"><option value="">Select Work Mode</option>{workModes.map(wm => <option key={wm.id} value={wm.id}>{wm.name}</option>)}</select></div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <FieldLabel label="Vacancies">
-                        <input type="number" min="1" value={f.vacancies} onChange={upd('vacancies')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400" />
-                      </FieldLabel>
-                    </div>
-                    <div>
-                      <FieldLabel label="Education">
-                        <select value={f.education} onChange={upd('education')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400">
-                          {EDU_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                      </FieldLabel>
-                    </div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Experience Level</label><select value={form.experienceLevelId} onChange={upd('experienceLevelId')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400"><option value="">Select Experience</option>{experienceLevels.map(el => <option key={el.id} value={el.id}>{el.label}</option>)}</select></div>
+                    <div><label className="block text-xs font-semibold text-slate-500">Education Level</label><select value={form.educationLevelId} onChange={upd('educationLevelId')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400"><option value="">Select Education</option>{educationLevels.map(el => <option key={el.id} value={el.id}>{el.name}</option>)}</select></div>
                   </div>
-
-                  <div>
-                    <RemoteToggle value={f.remoteOption} onChange={upd('remoteOption')} />
-                  </div>
+                  <div><label className="block text-xs font-semibold text-slate-500">Vacancies</label><input type="number" min="1" value={form.vacancies} onChange={upd('vacancies')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400" /></div>
                 </div>
               )}
 
-              {/* Step 1: Details */}
               {step === 1 && (
                 <div className="space-y-3">
-                  <div>
-                    <FieldLabel label="Job Description" required>
-                      <textarea
-                        value={f.description}
-                        onChange={upd('description')}
-                        rows={4}
-                        placeholder="Describe the role, responsibilities, requirements..."
-                        className={['w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none transition-all resize-none', errs.desc ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'].join(' ')}
-                      />
-                      {errs.desc && <p className="text-xs text-rose-500 mt-1">{errs.desc}</p>}
-                    </FieldLabel>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <FieldLabel label="Responsibilities">
-                        <textarea value={f.responsibilities} onChange={upd('responsibilities')} rows={3} placeholder="Key responsibilities..." className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400 resize-none" />
-                      </FieldLabel>
-                    </div>
-                    <div>
-                      <FieldLabel label="Qualifications">
-                        <textarea value={f.qualifications} onChange={upd('qualifications')} rows={3} placeholder="Required qualifications..." className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400 resize-none" />
-                      </FieldLabel>
-                    </div>
-                  </div>
-
-                  <div>
-                    <SkillInput tags={f.skills} onChange={upd('skills')} />
-                    {errs.skills && <p className="text-xs text-rose-500 mt-1">{errs.skills}</p>}
-                  </div>
-
-                  <div>
-                    <FieldLabel label="Application Deadline">
-                      <input type="date" value={f.applyDeadline} onChange={upd('applyDeadline')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400" />
-                    </FieldLabel>
-                  </div>
+                  <div><label className="block text-xs font-semibold text-slate-500">Job Description *</label><textarea value={form.description} onChange={upd('description')} rows={4} placeholder="Describe the role..." className={`w-full px-3 py-2 rounded-lg border bg-white text-sm outline-none resize-none ${errs.description ? 'border-rose-400' : 'border-slate-200 focus:border-indigo-400'}`} /></div>
+                  <div className="grid grid-cols-2 gap-3"><div><label className="block text-xs font-semibold text-slate-500">Responsibilities</label><textarea value={form.responsibilities} onChange={upd('responsibilities')} rows={3} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400 resize-none" /></div><div><label className="block text-xs font-semibold text-slate-500">Qualifications</label><textarea value={form.qualifications} onChange={upd('qualifications')} rows={3} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400 resize-none" /></div></div>
+                  <div><label className="block text-xs font-semibold text-slate-500 mb-2">Required Skills</label><div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-slate-50 max-h-32 overflow-y-auto">{skills.map(skill => (<button key={skill.id} type="button" onClick={() => toggleSkill(skill.id)} className={['px-3 py-1.5 rounded-lg text-xs font-medium transition-all', form.skillIds.includes(skill.id) ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-300'].join(' ')}>{skill.name}</button>))}</div>{errs.skillIds && <p className="text-xs text-rose-500 mt-1">{errs.skillIds}</p>}</div>
+                  <div><label className="block text-xs font-semibold text-slate-500">Application Deadline</label><input type="date" value={form.applyDeadline} onChange={upd('applyDeadline')} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:border-indigo-400" /></div>
                 </div>
               )}
 
-              {/* Step 2: Pay & Perks */}
               {step === 2 && (
                 <div className="space-y-3">
-                  <SalaryInputs
-                    min={f.salaryMin}
-                    max={f.salaryMax}
-                    onMin={upd('salaryMin')}
-                    onMax={upd('salaryMax')}
-                    currency={f.currency}
-                    onCurrency={upd('currency')}
-                    error={errs.salary}
-                  />
-
-                  <BenefitChips value={f.benefits} onChange={upd('benefits')} />
+                  <div><label className="block text-xs font-semibold text-slate-500 mb-2">Salary Range</label><div className="flex items-center gap-2"><select value={form.currency} onChange={upd('currency')} className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm">{CURRENCY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select><input type="number" value={form.salaryMin} onChange={upd('salaryMin')} placeholder="Min" className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm" /><span className="text-slate-300">—</span><input type="number" value={form.salaryMax} onChange={upd('salaryMax')} placeholder="Max" className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm" /></div>{errs.salary && <p className="text-xs text-rose-500 mt-1">{errs.salary}</p>}</div>
+                  <div><label className="block text-xs font-semibold text-slate-500 mb-2">Benefits & Perks</label><div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-slate-50 max-h-32 overflow-y-auto">{benefits.map(benefit => (<button key={benefit.id} type="button" onClick={() => toggleBenefit(benefit.id)} className={['px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1', form.benefitIds.includes(benefit.id) ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-300'].join(' ')}>{benefit.icon && <span>{benefit.icon}</span>}{benefit.name}</button>))}</div></div>
                 </div>
               )}
 
-              {/* Step 3: Review */}
               {step === 3 && (
                 <div className="space-y-3">
-                  <JobCardPreview form={f} />
-                  
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-slate-600 mb-2">Publish Checklist</p>
-                    <div className="space-y-1.5">
-                      {[
-                        { ok: f.title && f.company && f.location, label: 'Title, company & location filled' },
-                        { ok: f.description?.length >= 30, label: 'Description is complete' },
-                        { ok: f.skills.length > 0, label: 'At least one skill added' },
-                        { ok: !(f.salaryMin && f.salaryMax && Number(f.salaryMax) < Number(f.salaryMin)), label: 'Salary range is valid' },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs">
-                          <div className={['w-4 h-4 rounded-full flex items-center justify-center', item.ok ? 'bg-emerald-500' : 'bg-slate-300'].join(' ')}>
-                            {item.ok && <Icon name="check" size={8} strokeWidth={3} className="text-white" />}
-                          </div>
-                          <span className={item.ok ? 'text-slate-700' : 'text-slate-400'}>{item.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <div className="bg-slate-50 rounded-xl p-4"><h3 className="font-semibold mb-2">Job Preview</h3><p className="font-bold">{form.title || 'Job Title'}</p><p className="text-sm text-slate-500">{companies.find(c => c.id == form.companyId)?.name || 'Company'}</p><div className="flex gap-3 text-xs text-slate-500 mt-2"><span>{locations.find(l => l.id == form.locationId)?.city}, {locations.find(l => l.id == form.locationId)?.state}</span><span>{jobTypes.find(jt => jt.id == form.jobTypeId)?.name}</span><span>{workModes.find(wm => wm.id == form.workModeId)?.name}</span></div><p className="text-sm mt-3">{form.description?.substring(0, 150)}...</p><div className="flex flex-wrap gap-1 mt-3">{form.skillIds.slice(0, 3).map(sid => <span key={sid} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs">{skills.find(s => s.id == sid)?.name}</span>)}</div></div>
+                  <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs font-semibold text-slate-600 mb-2">Publish Checklist</p><div className="space-y-1.5">{[
+                    { ok: form.title && form.companyId && form.locationId, label: 'Title, company & location filled' },
+                    { ok: form.description?.length >= 30, label: 'Description is complete' },
+                    { ok: form.skillIds.length > 0, label: 'At least one skill added' },
+                    { ok: !(form.salaryMin && form.salaryMax && Number(form.salaryMax) < Number(form.salaryMin)), label: 'Salary range is valid' },
+                  ].map((item, i) => (<div key={i} className="flex items-center gap-2 text-xs"><div className={['w-4 h-4 rounded-full flex items-center justify-center', item.ok ? 'bg-emerald-500' : 'bg-slate-300'].join(' ')}>{item.ok && <Icon name="check" size={8} className="text-white" />}</div><span className={item.ok ? 'text-slate-700' : 'text-slate-400'}>{item.label}</span></div>))}</div></div>
                 </div>
               )}
             </div>
@@ -662,7 +589,7 @@ export const JobsPage = () => {
         )}
       </Modal>
     </div>
-  );
+  );  
 };
 
 export default JobsPage;
