@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -10,68 +10,113 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { jobs } from "../data/jobs";
-
-const locations = [
-  "New York, USA",
-  "Remote",
-  "Chicago, USA",
-  "Los Angeles, USA",
-  "London, UK",
-];
-
-const categories = [
-  "Software Engineering",
-  "Marketing",
-  "Design",
-  "Data Analysis",
-  "HR",
-  "Finance",
-];
+import { getJobs, searchJobs } from "../api/job";
+import { getActiveCategories } from "../api/category";
+import { getLocations } from "../api/location";
 
 const JOBS_PER_PAGE = 3;
 
 const Jobs = () => {
   const navigate = useNavigate();
 
-  // search state
+  const [jobs, setJobs] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [categories, setCategories] = useState([]);
+
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
-  const [filtered, setFiltered] = useState(jobs);
+  const [filtered, setFiltered] = useState([]);
   const [liked, setLiked] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
 
-  const handleSearch = () => {
-    const result = jobs.filter((job) => {
-      const matchKeyword =
-        keyword === "" ||
-        job.title.toLowerCase().includes(keyword.toLowerCase()) ||
-        job.company.toLowerCase().includes(keyword.toLowerCase());
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      const [jobsRes, catRes, locRes] = await Promise.all([
+        getJobs(),
+        getActiveCategories(),
+        getLocations(),
+      ]);
+      if (jobsRes.success) {
+        setJobs(jobsRes.data);
+        setFiltered(jobsRes.data);
+      }
+      if (catRes.success) setCategories(catRes.data);
+      if (locRes.success) setLocations(locRes.data);
+    };
+    fetchInitialData();
+  }, []);
 
-      const matchLocation =
-        location === "" || job.location === location;
+  const handleSearch = async () => {
+    if (keyword) {
+      const res = await searchJobs(keyword);
+      if (res.success) {
+        let results = res.data;
+        if (location) {
+          results = results.filter(
+            (job) => job.locationId === Number(location)
+          );
+        }
+        if (category) {
+          results = results.filter(
+            (job) => job.categoryId === Number(category)
+          );
+        }
+        setFiltered(results);
+        setCurrentPage(1);
+        return;
+      }
+    }
 
-      const matchCategory =
-        category === "" ||
-        job.title.toLowerCase().includes(category.toLowerCase());
-
-      return matchKeyword && matchLocation && matchCategory;
-    });
-
-    setFiltered(result);
+    // fallback: client-side filter
+    let results = jobs;
+    if (keyword) {
+      results = results.filter(
+        (job) =>
+          job.title.toLowerCase().includes(keyword.toLowerCase()) ||
+          (job.company?.name || "").toLowerCase().includes(keyword.toLowerCase())
+      );
+    }
+    if (location) {
+      results = results.filter((job) => job.locationId === Number(location));
+    }
+    if (category) {
+      results = results.filter((job) => job.categoryId === Number(category));
+    }
+    setFiltered(results);
     setCurrentPage(1);
   };
 
   const toggleLike = (id) =>
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  // pagination logic
   const totalPages = Math.ceil(filtered.length / JOBS_PER_PAGE);
   const paginated = filtered.slice(
     (currentPage - 1) * JOBS_PER_PAGE,
     currentPage * JOBS_PER_PAGE
   );
+
+  const formatSalary = (job) => {
+    if (job.salaryMin && job.salaryMax)
+      return `${job.currency || ""} ${job.salaryMin} - ${job.salaryMax}`;
+    if (job.salaryMin) return `${job.currency || ""} ${job.salaryMin}+`;
+    if (job.salaryMax) return `Up to ${job.currency || ""} ${job.salaryMax}`;
+    return "Negotiable";
+  };
+
+  const formatDeadline = (deadline) => {
+    if (!deadline) return "No deadline";
+    return new Date(deadline).toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatLocation = (job) => {
+    if (job.location) return `${job.location.city}, ${job.location.state}`;
+    return "Location not specified";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,8 +172,8 @@ const Jobs = () => {
               >
                 <option value="">Job Locations</option>
                 {locations.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
+                  <option key={loc.id} value={loc.id}>
+                    {loc.city}, {loc.state}
                   </option>
                 ))}
               </select>
@@ -146,8 +191,8 @@ const Jobs = () => {
               >
                 <option value="">Job Categories</option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
@@ -213,11 +258,14 @@ const Jobs = () => {
                   {/* Logo */}
                   <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
                     <img
-                      src={job.logo}
-                      alt={job.company}
+                      src={
+                        job.company?.logo ||
+                        `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`
+                      }
+                      alt={job.company?.name || "Company"}
                       className="w-12 h-12 object-contain"
                       onError={(e) =>
-                        (e.currentTarget.src = `https://dummyimage.com/80x80/facc15/111827.png&text=${job.company[0]}`)
+                        (e.currentTarget.src = `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`)
                       }
                     />
                   </div>
@@ -228,20 +276,20 @@ const Jobs = () => {
                       {job.title}
                     </h3>
                     <p className="text-xs text-gray-400 mb-1">
-                      {job.company}
+                      {job.company?.name || "N/A"}
                     </p>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <MapPin size={13} className="text-accent" />
-                        {job.location}
+                        {formatLocation(job)}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock size={13} className="text-accent" />
-                        {job.type}
+                        {job.jobType?.name || "N/A"}
                       </span>
                       <span className="flex items-center gap-1">
                         <DollarSign size={13} className="text-accent" />
-                        {job.salary}
+                        {formatSalary(job)}
                       </span>
                     </div>
                   </div>
@@ -278,7 +326,7 @@ const Jobs = () => {
                     {/* Deadline */}
                     <span className="flex items-center gap-1 text-xs text-gray-400">
                       <Calendar size={12} className="text-accent" />
-                      Date Line: {job.deadline}
+                      Date Line: {formatDeadline(job.applyDeadline)}
                     </span>
                   </div>
                 </div>

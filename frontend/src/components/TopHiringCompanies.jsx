@@ -1,43 +1,22 @@
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, FreeMode } from "swiper/modules";
+import { getCompanies } from "../api/company";
 
 import "swiper/css";
 import "swiper/css/free-mode";
 
-const companies = [
-  {
-    name: "Elink Inc.",
-    jobs: "2 Jobs Afghanistan",
-    logo: "https://dummyimage.com/200x200/facc15/111827.png&text=E",
-  },
-  {
-    name: "Envato Inc.",
-    jobs: "3 Jobs Afghanistan",
-    logo: "https://dummyimage.com/200x200/111827/facc15.png&text=En",
-  },
-  {
-    name: "Hymalyas Inc",
-    jobs: "2 Jobs Afghanistan",
-    logo: "https://dummyimage.com/200x200/facc15/111827.png&text=H",
-  },
-  {
-    name: "Pepper Inc.",
-    jobs: "3 Jobs Afghanistan",
-    logo: "https://dummyimage.com/200x200/111827/facc15.png&text=P",
-  },
-  {
-    name: "Tech Corp",
-    jobs: "5 Jobs Afghanistan",
-    logo: "https://dummyimage.com/200x200/facc15/111827.png&text=T",
-  },
-  {
-    name: "Designly",
-    jobs: "4 Jobs Afghanistan",
-    logo: "https://dummyimage.com/200x200/111827/facc15.png&text=D",
-  },
-];
-
 const TopHiringCompanies = () => {
+  const [companies, setCompanies] = useState([]);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      const res = await getCompanies();
+      if (res.success) setCompanies(res.data);
+    };
+    fetchCompanies();
+  }, []);
+
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4">
@@ -62,10 +41,10 @@ const TopHiringCompanies = () => {
             slidesPerView={1}
             loop={true}
             freeMode={true}
-            speed={4000} // smooth continuous speed
+            speed={4000}
             allowTouchMove={false}
             autoplay={{
-              delay: 0, // 👈 zero delay = continuous
+              delay: 0,
               disableOnInteraction: false,
               pauseOnMouseEnter: true,
             }}
@@ -76,8 +55,8 @@ const TopHiringCompanies = () => {
             }}
             className="pb-2 select-none"
           >
-            {companies.map((company, index) => (
-              <SwiperSlide key={index}>
+            {companies.map((company) => (
+              <SwiperSlide key={company.id}>
                 <div
                   dir="ltr"
                   className="flex flex-col items-center text-center p-6 group"
@@ -85,9 +64,12 @@ const TopHiringCompanies = () => {
                   {/* Circle Image */}
                   <div className="w-32 h-32 md:w-36 md:h-36 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center overflow-hidden group-hover:shadow-lg group-hover:border-accent transition duration-300">
                     <img
-                      src={company.logo}
+                      src={company.logo || `https://dummyimage.com/200x200/facc15/111827.png&text=${company.name[0]}`}
                       alt={company.name}
                       className="max-h-16 max-w-[70%] object-contain"
+                      onError={(e) =>
+                        (e.currentTarget.src = `https://dummyimage.com/200x200/facc15/111827.png&text=${company.name[0]}`)
+                      }
                     />
                   </div>
 
@@ -96,7 +78,11 @@ const TopHiringCompanies = () => {
                     <h3 className="font-semibold text-primary text-lg">
                       {company.name}
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">{company.jobs}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {company.location
+                        ? `${company.location.city}, ${company.location.state}`
+                        : "Location not specified"}
+                    </p>
                   </div>
                 </div>
               </SwiperSlide>
@@ -105,7 +91,6 @@ const TopHiringCompanies = () => {
         </div>
       </div>
 
-      {/* Make autoplay perfectly linear (no easing jumps) */}
       <style>{`
         .swiper-wrapper {
           transition-timing-function: linear !important;

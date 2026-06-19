@@ -29,6 +29,16 @@ export class CategoryService {
     });
   }
 
+  async findActive() {
+    return this.prisma.category.findMany({
+      where: { status: 'active' },
+      include: {
+        _count: { select: { jobs: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async update(id: number, data: UpdateCategoryDto) {
     try {
       return await this.prisma.category.update({

@@ -1,3 +1,6 @@
+import { useState, useEffect } from "react";
+import { getActiveCategories } from "../api/category";
+import { getJobsByCategory } from "../api/job";
 import {
   GraduationCap,
   HeartPulse,
@@ -9,18 +12,28 @@ import {
   Landmark,
 } from "lucide-react";
 
-const categories = [
-  { name: "Sales/Marketing", vacancies: 8, icon: GraduationCap },
-  { name: "Science/Biotech", vacancies: 6, icon: HeartPulse },
-  { name: "Information Technology", vacancies: 10, icon: Scale },
-  { name: "Hotel/Hospitality", vacancies: 5, icon: Bike },
-  { name: "Purchasing/Procurement", vacancies: 4, icon: Car },
-  { name: "Broadcast/Journalism", vacancies: 3, icon: Gamepad2 },
-  { name: "Internships/College", vacancies: 9, icon: UserRound },
-  { name: "Restaurant/Food Service", vacancies: 7, icon: Landmark },
+const iconList = [
+  GraduationCap,
+  HeartPulse,
+  Scale,
+  Bike,
+  Car,
+  Gamepad2,
+  UserRound,
+  Landmark,
 ];
 
 const PopularJobCategories = () => {
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const res = await getActiveCategories();
+      if (res.success) setCategories(res.data);
+    };
+    fetchCategories();
+  }, []);
+
   return (
     <section className="py-16 bg-gray-100">
       <div className="max-w-7xl mx-auto px-4">
@@ -38,10 +51,11 @@ const PopularJobCategories = () => {
         {/* Categories grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((cat, index) => {
-            const Icon = cat.icon;
+            const Icon = iconList[index % iconList.length];
+            const vacancyCount = cat.jobs ? cat.jobs.length : 0;
             return (
               <div
-                key={index}
+                key={cat.id}
                 data-aos="fade-up"
                 data-aos-delay={index * 100}
                 className="relative group bg-gray-50 border border-gray-200 rounded-md
@@ -65,7 +79,7 @@ const PopularJobCategories = () => {
                   {cat.name}
                 </h3>
                 <p className="relative text-xs md:text-sm text-gray-500 mt-2">
-                  ({cat.vacancies} Open Vacancies)
+                  ({vacancyCount} Open Vacancies)
                 </p>
               </div>
             );

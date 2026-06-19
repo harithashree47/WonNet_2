@@ -1,6 +1,8 @@
 import { Routes, Route, useLocation } from "react-router-dom";
-import { ToastContainer } from "react-toastify"; // 👈 ADD THIS
-import "react-toastify/dist/ReactToastify.css"; // 👈 ADD THIS
+import { getCategories, getCategoryById } from "./api/category";
+import { getJobs, getPublishedJobs, getJobById, searchJobs, getJobsByCompany, getJobsByCategory, getJobsByLocation } from "./api/job";
+import { ToastContainer } from "react-toastify"; 
+import "react-toastify/dist/ReactToastify.css"; 
 import AOSProvider from "./components/AOSProvider";
 import Header from "./components/Header";
 import Footer from "./components/Footer";

@@ -22,6 +22,11 @@ export class CategoryController {
     return this.categoryService.findAll();
   }
 
+  @Get('active')
+  findActive() {
+    return this.categoryService.findActive();
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN')

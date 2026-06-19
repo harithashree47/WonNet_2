@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -7,22 +7,53 @@ import {
   Calendar,
   Heart,
 } from "lucide-react";
-import { jobs } from "../data/jobs";
+import { getPublishedJobs } from "../api/job";
 
 const tabs = ["Featured", "Full Time", "Part Time"];
 
 const JobListing = () => {
   const [activeTab, setActiveTab] = useState("Featured");
   const [liked, setLiked] = useState({});
+  const [jobs, setJobs] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const res = await getPublishedJobs();
+      if (res.success) setJobs(res.data);
+    };
+    fetchJobs();
+  }, []);
 
   const filtered =
     activeTab === "Featured"
       ? jobs
-      : jobs.filter((j) => j.type === activeTab);
+      : jobs.filter((j) => j.jobType?.name === activeTab);
 
   const toggleLike = (id) =>
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const formatSalary = (job) => {
+    if (job.salaryMin && job.salaryMax)
+      return `${job.currency || ""} ${job.salaryMin} - ${job.salaryMax}`;
+    if (job.salaryMin) return `${job.currency || ""} ${job.salaryMin}+`;
+    if (job.salaryMax) return `Up to ${job.currency || ""} ${job.salaryMax}`;
+    return "Negotiable";
+  };
+
+  const formatDeadline = (deadline) => {
+    if (!deadline) return "No deadline";
+    return new Date(deadline).toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatLocation = (job) => {
+    if (job.location) return `${job.location.city}, ${job.location.state}`;
+    return "Location not specified";
+  };
 
   return (
     <section className="py-16 bg-gray-50">
@@ -72,12 +103,15 @@ const JobListing = () => {
               {/* Logo */}
               <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
                 <img
-                  src={job.logo}
-                  alt={job.company}
+                  src={
+                    job.company?.logo ||
+                    `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`
+                  }
+                  alt={job.company?.name || "Company"}
                   className="w-12 h-12 object-contain"
                   onError={(e) =>
                     (e.currentTarget.src =
-                      `https://dummyimage.com/80x80/facc15/111827.png&text=${job.company[0]}`)
+                      `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`)
                   }
                 />
               </div>
@@ -90,15 +124,15 @@ const JobListing = () => {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs md:text-sm text-gray-500">
                   <span className="flex items-center gap-1">
                     <MapPin size={13} className="text-accent" />
-                    {job.location}
+                    {formatLocation(job)}
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock size={13} className="text-accent" />
-                    {job.type}
+                    {job.jobType?.name || job.type || "N/A"}
                   </span>
                   <span className="flex items-center gap-1">
                     <DollarSign size={13} className="text-accent" />
-                    {job.salary}
+                    {formatSalary(job)}
                   </span>
                 </div>
               </div>
@@ -118,7 +152,7 @@ const JobListing = () => {
                     />
                   </button>
 
-                  {/* View More → navigate to detail page */}
+                  {/* View More */}
                   <button
                     onClick={() => navigate(`/jobs/${job.id}`)}
                     className="bg-primary text-white text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-accent hover:text-primary transition"
@@ -135,7 +169,7 @@ const JobListing = () => {
                 {/* Deadline */}
                 <span className="flex items-center gap-1 text-xs text-gray-400">
                   <Calendar size={12} className="text-accent" />
-                  Date Line: {job.deadline}
+                  Date Line: {formatDeadline(job.applyDeadline)}
                 </span>
               </div>
             </div>

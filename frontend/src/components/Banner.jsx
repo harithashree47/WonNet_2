@@ -1,32 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
-
-const locations = [
-  "New York, USA",
-  "Remote",
-  "Chicago, USA",
-  "Los Angeles, USA",
-  "London, UK",
-];
-
-const categories = [
-  "Software Engineering",
-  "Marketing",
-  "Design",
-  "Data Analysis",
-  "HR",
-  "Finance",
-];
+import { getActiveCategories } from "../api/category";
+import { getLocations } from "../api/location";
 
 const Banner = () => {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
+  const [locations, setLocations] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [catRes, locRes] = await Promise.all([
+        getActiveCategories(),
+        getLocations(),
+      ]);
+      if (catRes.success) setCategories(catRes.data);
+      if (locRes.success) setLocations(locRes.data);
+    };
+    fetchData();
+  }, []);
 
   const handleSearch = () => {
-    // navigate to jobs page with search params
     const params = new URLSearchParams();
     if (keyword) params.set("keyword", keyword);
     if (location) params.set("location", location);
@@ -53,11 +51,11 @@ const Banner = () => {
             <span className="text-accent">Get Your New Job</span>
           </h1>
           <p className="text-sm md:text-base lg:text-lg text-gray-300">
-            Find Jobs, Employment &amp; Career Opportunities
+            Find Jobs, Employment & Career Opportunities
           </p>
         </div>
 
-        {/* Search filters – same style as Jobs page */}
+        {/* Search filters */}
         <div
           className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
           data-aos="fade-up"
@@ -89,8 +87,8 @@ const Banner = () => {
             >
               <option value="">Job Locations</option>
               {locations.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
+                <option key={loc.id} value={loc.id}>
+                  {loc.city}, {loc.state}
                 </option>
               ))}
             </select>
@@ -108,8 +106,8 @@ const Banner = () => {
             >
               <option value="">Job Categories</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>

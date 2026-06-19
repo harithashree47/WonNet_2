@@ -15,6 +15,16 @@ export async function getCategories() {
   }
 }
 
+// Get active categories only
+export async function getActiveCategories() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/categories/active`);
+    return await handleResponse(response);
+  } catch (error) {
+    return { success: false, error: { message: 'Network error occurred' } };
+  }
+}
+
 export async function createCategory(categoryData) {
   try {
     const token = localStorage.getItem('access_token');

@@ -10,7 +10,7 @@ import { Modal } from '../components/ui/Modal';
 import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { getJobs, createJob, updateJob, deleteJob, updateJobStatus } from '../api/job';
 import { getCompanies } from '../api/company';
-import { getCategories } from '../api/category';
+import { getActiveCategories } from '../api/category';
 import { getActiveJobTypes } from '../api/jobType';
 import { getActiveWorkModes } from '../api/workMode';
 import { getActiveExperienceLevels } from '../api/experienceLevel';
@@ -135,7 +135,7 @@ export const JobsPage = () => {
 
   const fetchMasterData = async () => {
     const [companiesRes, categoriesRes, jobTypesRes, workModesRes, expLevelsRes, eduLevelsRes, locationsRes, deptsRes, skillsRes, benefitsRes] = await Promise.all([
-      getCompanies(), getCategories(), getActiveJobTypes(), getActiveWorkModes(),
+      getCompanies(), getActiveCategories(), getActiveJobTypes(), getActiveWorkModes(),
       getActiveExperienceLevels(), getActiveEducationLevels(), getActiveLocations(),
       getActiveDepartments(), getActiveSkills(), getActiveBenefits()
     ]);
