@@ -10,8 +10,52 @@ import {
   ArrowLeft,
   Briefcase,
   Users,
+  Heart,
+  Shield,
+  Eye,
+  Home,
+  TrendingUp,
+  Umbrella,
+  Dumbbell,
+  BookOpen,
+  Utensils,
+  Car,
+  Coffee,
+  Plane,
+  Wifi,
+  Phone,
+  Smile,
+  Zap,
 } from "lucide-react";
 import { getJobById } from "../api/job";
+
+const benefitIconMap = {
+  heart: Heart,
+  shield: Shield,
+  eye: Eye,
+  "dollar-sign": DollarSign,
+  home: Home,
+  clock: Clock,
+  "trending-up": TrendingUp,
+  umbrella: Umbrella,
+  dumbbell: Dumbbell,
+  "book-open": BookOpen,
+  utensils: Utensils,
+  car: Car,
+  coffee: Coffee,
+  plane: Plane,
+  wifi: Wifi,
+  phone: Phone,
+  smile: Smile,
+  zap: Zap,
+};
+
+const renderBenefitIcon = (iconName) => {
+  if (!iconName) return null;
+  const Icon = benefitIconMap[iconName];
+  if (Icon) return <Icon size={15} className="text-green-600 mr-0.5" />;
+  return <span className="mr-0.5">{iconName}</span>;
+};
 
 const JobDetail = () => {
   const { id } = useParams();
@@ -127,6 +171,10 @@ const JobDetail = () => {
               {job.jobType?.name || "N/A"}
             </span>
             <span className="flex items-center gap-1.5 text-xs bg-white/10 text-gray-200 px-3 py-1.5 rounded-full">
+              <Users size={13} className="text-accent" />
+              {job.vacancies || 1} Open Vacancies
+            </span>
+            <span className="flex items-center gap-1.5 text-xs bg-white/10 text-gray-200 px-3 py-1.5 rounded-full">
               <DollarSign size={13} className="text-accent" />
               {formatSalary()}
             </span>
@@ -238,7 +286,7 @@ const JobDetail = () => {
                     key={jb.benefit.id}
                     className="bg-green-50 text-green-700 text-xs px-3 py-1.5 rounded-full font-medium"
                   >
-                    {jb.benefit.icon && `${jb.benefit.icon} `}
+                    {renderBenefitIcon(jb.benefit.icon)}
                     {jb.benefit.name}
                   </span>
                 ))}
@@ -261,6 +309,10 @@ const JobDetail = () => {
               <li className="flex items-center gap-2">
                 <Clock size={15} className="text-accent flex-shrink-0" />
                 <span>{job.jobType?.name || "N/A"}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Users size={15} className="text-accent flex-shrink-0" />
+                <span>{job.vacancies || 1} Open Vacancies</span>
               </li>
               <li className="flex items-center gap-2">
                 <DollarSign size={15} className="text-accent flex-shrink-0" />
