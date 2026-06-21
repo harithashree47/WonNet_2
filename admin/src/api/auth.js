@@ -214,3 +214,43 @@ export async function deleteAdmin(id) {
     return { success: false, error: { message: 'Network error occurred' } };
   }
 }
+
+// 13. GET ALL USERS (role === 'USER')
+export async function getUsers() {
+  try {
+    const token = localStorage.getItem('access_token');
+    
+    const response = await fetch(`${API_BASE_URL}/auth/users`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    return await handleResponse(response);
+  } catch (error) {
+    console.error('Get users error:', error);
+    return { success: false, error: { message: 'Network error occurred' } };
+  }
+}
+
+// 14. UPDATE USER STATUS
+export async function updateUserStatus(id, status) {
+  try {
+    const token = localStorage.getItem('access_token');
+    
+    const response = await fetch(`${API_BASE_URL}/auth/user/${id}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+    
+    return await handleResponse(response);
+  } catch (error) {
+    console.error('Update user status error:', error);
+    return { success: false, error: { message: 'Network error occurred' } };
+  }
+}

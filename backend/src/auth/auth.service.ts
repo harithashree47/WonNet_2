@@ -44,7 +44,7 @@ export class AuthService {
           status: user.status,
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       if (error.code === 'P2002') {
         throw new BadRequestException('Email or mobile already exists');
       }
@@ -123,7 +123,7 @@ export class AuthService {
           status: admin.status,
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       if (error.code === 'P2002') {
         throw new BadRequestException('Email or mobile already exists');
       }
@@ -173,6 +173,39 @@ export class AuthService {
     return this.prisma.user.findMany({
       where: {
         role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+      },
+    });
+  }
+
+  // ✅ GET ALL USERS (role === 'USER')
+  async getAllUsers() {
+    return this.prisma.user.findMany({
+      where: {
+        role: 'USER',
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  // ✅ UPDATE USER STATUS
+  async updateUserStatus(id: number, status: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { status },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
       },
     });
   }

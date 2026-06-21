@@ -72,4 +72,20 @@ export class AuthController {
   softDeleteAdmin(@Param('id') id: string) {
     return this.authService.softDeleteAdmin(+id);
   }
+
+  // ✅ GET ALL USERS (role === 'USER')
+  @Get('users')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  getAllUsers() {
+    return this.authService.getAllUsers();
+  }
+
+  // ✅ UPDATE USER STATUS
+  @Patch('user/:id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  updateUserStatus(@Param('id') id: string, @Body('status') status: string) {
+    return this.authService.updateUserStatus(+id, status);
+  }
 }

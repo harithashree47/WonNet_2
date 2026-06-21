@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
+import { getUsers } from '../../api/auth';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
@@ -34,6 +35,22 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
   const role = user?.role?.toUpperCase() || '';
   const isSuper = role === 'SUPER_ADMIN';
   const isAdmin = isSuper || role === 'ADMIN';
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      const res = await getUsers();
+      if (res.success) {
+        // Filter only users with role === 'USER'
+        const regularUsers = res.data.filter(u => u.role?.toUpperCase() === 'USER');
+        setUsers(regularUsers);
+      }
+      setLoadingUsers(false);
+    };
+    fetchUsers();
+  }, []);
 
   return (
     <aside
@@ -160,6 +177,38 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
             </button>
           );
         })}
+
+        {/* Users Section - Only show to admins */}
+        {!collapsed && isAdmin && (
+          <>
+            <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Users ({users.length})
+            </p>
+            {loadingUsers ? (
+              <div className="px-3 py-2 text-xs text-slate-400">Loading users...</div>
+            ) : (
+              <div className="space-y-1 max-h-64 overflow-y-auto">
+                {users.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                    title={u.name || u.email}
+                  >
+                    <Avatar className="w-6 h-6 text-[10px]">
+                      {(u.name || u.email || '?')[0].toUpperCase()}
+                    </Avatar>
+                    <span className="flex-1 text-xs font-medium text-slate-700 truncate">
+                      {u.name || u.email}
+                    </span>
+                  </div>
+                ))}
+                {users.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-slate-400">No users found</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </nav>
     </aside>
   );
