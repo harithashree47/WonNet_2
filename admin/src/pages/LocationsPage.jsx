@@ -115,7 +115,7 @@ export const LocationsPage = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Locations</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Locations</h1>
           <p className="text-sm text-slate-500 mt-1">Manage job locations (State & City)</p>
         </div>
         <Button icon="map-pin" onClick={() => { resetForm(); setOpen(true); }}>
@@ -123,28 +123,22 @@ export const LocationsPage = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Updated to match ApplicationsPage style */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 flex items-center gap-3">
+        <Card className="p-4 flex flex-col items-center justify-center">
           <ToneIcon icon="map-pin" tone="primary" size="md" />
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Locations</div>
-            <div className="text-xl font-bold text-slate-900">{stats.total}</div>
-          </div>
+          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-2">Total Locations</div>
+          <div className="text-xl font-extrabold text-slate-900">{stats.total}</div>
         </Card>
-        <Card className="p-4 flex items-center gap-3">
+        <Card className="p-4 flex flex-col items-center justify-center">
           <ToneIcon icon="check" tone="success" size="md" />
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Active</div>
-            <div className="text-xl font-bold text-slate-900">{stats.active}</div>
-          </div>
+          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-2">Active</div>
+          <div className="text-xl font-extrabold text-slate-900">{stats.active}</div>
         </Card>
-        <Card className="p-4 flex items-center gap-3">
+        <Card className="p-4 flex flex-col items-center justify-center">
           <ToneIcon icon="x" tone="danger" size="md" />
-          <div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Inactive</div>
-            <div className="text-xl font-bold text-slate-900">{stats.inactive}</div>
-          </div>
+          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-2">Inactive</div>
+          <div className="text-xl font-extrabold text-slate-900">{stats.inactive}</div>
         </Card>
       </div>
 
@@ -152,18 +146,13 @@ export const LocationsPage = () => {
       <Card>
         <CardHeader title="Location List" subtitle="Manage your platform's job locations" />
         <div className="px-6 pb-4 flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <Icon name="search" size={14} />
-            </span>
-            <input 
-              type="text"
-              placeholder="Search by city or state..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:bg-white transition-all"
-            />
-          </div>
+          <Input
+            placeholder="Search by city or state..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            icon="search"
+            className="flex-1"
+          />
           <Select 
             value={stateFilter}
             onChange={(e) => setStateFilter(e.target.value)}
@@ -223,9 +212,28 @@ export const LocationsPage = () => {
                       </Badge>
                     </TD>
                     <TD align="right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(l)} />
-                        <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => handleDelete(l.id, l.city, l.state)} />
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Edit Button - Using ApplicationsPage style */}
+                        <button
+                          onClick={() => handleEdit(l)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-900 text-white hover:bg-black transition-all duration-200"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+
+                        {/* Delete Button - Using ApplicationsPage style */}
+                        <button
+                          onClick={() => handleDelete(l.id, l.city, l.state)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all duration-200"
+                          title="Delete"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </TD>
                   </TR>
@@ -236,7 +244,7 @@ export const LocationsPage = () => {
         </div>
       </Card>
 
-      {/* Add/Edit Location Modal - Simple Text Inputs */}
+      {/* Add/Edit Location Modal */}
       <Modal 
         open={open} 
         onClose={() => setOpen(false)} 

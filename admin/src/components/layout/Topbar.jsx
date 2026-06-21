@@ -34,9 +34,14 @@ export const Topbar = ({ user, onMenuClick, onLogout, pageTitle, pageSubtitle })
           <Icon name="menu" size={18} />
         </button>
 
-        <div className="hidden md:block">
-          <h1 className="text-base font-bold text-slate-900 tracking-tight">{pageTitle || 'Dashboard'}</h1>
-          {pageSubtitle && <p className="text-xs text-slate-500">{pageSubtitle}</p>}
+        <div className="flex-1 min-w-0">
+          <div className="md:hidden">
+            <h1 className="text-sm font-bold text-slate-900 tracking-tight truncate">{pageTitle || 'Dashboard'}</h1>
+          </div>
+          <div className="hidden md:block">
+            <h1 className="text-base font-bold text-slate-900 tracking-tight">{pageTitle || 'Dashboard'}</h1>
+            {pageSubtitle && <p className="text-xs text-slate-500">{pageSubtitle}</p>}
+          </div>
         </div>
 
         <div className="flex-1 max-w-md mx-auto">

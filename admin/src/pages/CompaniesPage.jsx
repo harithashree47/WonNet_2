@@ -106,35 +106,29 @@ export const CompaniesPage = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // ✅ FIXED: Image upload with preview
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please upload an image file');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
       return;
     }
 
-    // Create local preview URL immediately
     const localPreviewUrl = URL.createObjectURL(file);
     
-    // Update form with local preview FIRST (this will show immediately)
     setForm(prev => ({ 
       ...prev, 
       logoPreview: localPreviewUrl, 
       logoFile: file,
-      logo: '' // Clear any existing logo while uploading
+      logo: ''
     }));
 
-    // Then upload to server
     setUploading(true);
     try {
       const result = await uploadImage(file);
@@ -142,11 +136,10 @@ export const CompaniesPage = () => {
       if (result.success) {
         const imageUrl = result.url || result.data?.url;
         const fullUrl = imageUrl.startsWith('http') ? imageUrl : getLogoUrl(imageUrl);
-        // Update with server URL after upload completes
         setForm(prev => ({ 
           ...prev, 
           logo: fullUrl,
-          logoPreview: fullUrl // Use server URL for preview
+          logoPreview: fullUrl
         }));
       } else {
         alert(result.error || 'Upload failed');
@@ -274,45 +267,38 @@ export const CompaniesPage = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 flex items-center gap-3">
+      {/* Stats Cards - Updated to ApplicationsPage style */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="p-4 flex flex-col items-center justify-center">
           <ToneIcon icon="building" tone="primary" size="md" />
-          <div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Total Companies</div>
-            <div className="text-xl font-extrabold text-slate-900">{stats.total}</div>
-          </div>
+          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-2">Total Companies</div>
+          <div className="text-xl font-extrabold text-slate-900">{stats.total}</div>
         </Card>
-        <Card className="p-4 flex items-center gap-3">
+        <Card className="p-4 flex flex-col items-center justify-center">
           <ToneIcon icon="check-circle" tone="success" size="md" />
-          <div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Active</div>
-            <div className="text-xl font-extrabold text-slate-900">{stats.active}</div>
-          </div>
+          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-2">Active</div>
+          <div className="text-xl font-extrabold text-slate-900">{stats.active}</div>
         </Card>
-        <Card className="p-4 flex items-center gap-3">
+        <Card className="p-4 flex flex-col items-center justify-center">
           <ToneIcon icon="x-circle" tone="danger" size="md" />
-          <div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Inactive</div>
-            <div className="text-xl font-extrabold text-slate-900">{stats.inactive}</div>
-          </div>
+          <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-2">Inactive</div>
+          <div className="text-xl font-extrabold text-slate-900">{stats.inactive}</div>
         </Card>
       </div>
 
       {/* Companies Table */}
       <Card>
         <CardHeader title="All Companies" subtitle={`${filteredCompanies.length} companies found`} />
-        <div className="px-6 pb-4 flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <Icon name="search" size={14} />
-            </span>
-            <input 
-              type="text"
+        
+        {/* Responsive Search Bar - Reduced Width */}
+        <div className="px-4 sm:px-6 pb-4 flex flex-col sm:flex-row gap-3">
+          <div className="w-full sm:max-w-xs md:max-w-sm lg:max-w-md">
+            <Input
               placeholder="Search companies..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:bg-white transition-all"
+              icon="search"
+              className="w-full"
             />
           </div>
           <Select 
@@ -320,18 +306,19 @@ export const CompaniesPage = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             options={[{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]}
             placeholder="All Status"
-            className="md:w-44"
+            className="w-full sm:w-44"
           />
         </div>
-        <div className="overflow-hidden">
+
+        <div className="overflow-x-auto">
           <Table>
             <THead>
               <TR>
                 <TH className="w-20">Logo</TH>
                 <TH>Company Name</TH>
-                <TH>Email</TH>
-                <TH>Phone</TH>
-                <TH>Location</TH>
+                <TH className="hidden sm:table-cell">Email</TH>
+                <TH className="hidden md:table-cell">Phone</TH>
+                <TH className="hidden lg:table-cell">Location</TH>
                 <TH>Status</TH>
                 <TH align="right">Actions</TH>
               </TR>
@@ -356,7 +343,7 @@ export const CompaniesPage = () => {
                 filteredCompanies.map((c) => (
                   <TR key={c.id}>
                     <TD>
-                      <div className="w-12 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-sm">
+                      <div className="w-10 h-10 sm:w-12 sm:h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
                         <img 
                           src={c.logo || 'https://placehold.co/48x40/f1f5f9/94a3b8?text=Logo'} 
                           alt={c.name}
@@ -370,22 +357,52 @@ export const CompaniesPage = () => {
                     </TD>
                     <TD>
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold text-slate-900">{c.name}</span>
+                        <span className="font-semibold text-slate-900 truncate">{c.name}</span>
                       </div>
                     </TD>
-                    <TD className="text-sm text-slate-600">{c.email || '-'}</TD>
-                    <TD className="text-sm text-slate-600">{c.phone || '-'}</TD>
-                    <TD className="text-sm text-slate-600">{getLocationDisplay(c)}</TD>
+                    <TD className="text-sm text-slate-600 hidden sm:table-cell">{c.email || '-'}</TD>
+                    <TD className="text-sm text-slate-600 hidden md:table-cell">{c.phone || '-'}</TD>
+                    <TD className="text-sm text-slate-600 hidden lg:table-cell">{getLocationDisplay(c)}</TD>
                     <TD>
                       <Badge tone={statusTone(c.status)} dot>
                         {c.status}
                       </Badge>
                     </TD>
                     <TD align="right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="xs" icon="eye" onClick={() => handleView(c)} />
-                        <Button variant="ghost" size="xs" icon="pencil" onClick={() => handleEdit(c)} />
-                        <Button variant="ghost" size="xs" icon="trash-2" className="text-rose-500" onClick={() => confirmDelete(c)} />
+                      <div className="flex items-center justify-end gap-1 sm:gap-2">
+                        {/* View Button */}
+                        <button
+                          onClick={() => handleView(c)}
+                          className="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-all duration-200"
+                          title="View Details"
+                        >
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => handleEdit(c)}
+                          className="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-900 text-white hover:bg-black transition-all duration-200"
+                          title="Edit"
+                        >
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => confirmDelete(c)}
+                          className="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all duration-200"
+                          title="Delete"
+                        >
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </TD>
                   </TR>
@@ -560,7 +577,7 @@ export const CompaniesPage = () => {
           {/* Company Information */}
           <div>
             <h3 className="text-base font-semibold mb-4 text-slate-900">Company Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input 
                 label="Company Name"
                 placeholder="Enter company name" 

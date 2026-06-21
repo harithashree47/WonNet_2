@@ -2,36 +2,25 @@ import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
-export const Layout = ({ user, onLogout, active, onNavigate, pageTitle, pageSubtitle, children }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+export const Layout = ({ user, onLogout, active, onNavigate, pageTitle, pageSubtitle, children, sidebarCollapsed, onSidebarToggle, mobileSidebarOpen, onMobileSidebarToggle }) => {
+  const [collapsed, setCollapsed] = useState(sidebarCollapsed || false);
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-slate-900/50 z-30"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      <div
-        className={[
-          'lg:relative fixed inset-y-0 left-0 z-40 transform transition-transform duration-300',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full',
-          'lg:translate-x-0',
-        ].join(' ')}
-      >
+      <div className="lg:relative fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 lg:translate-x-0">
         <Sidebar
           active={active}
           onNavigate={(id) => {
             onNavigate?.(id);
-            setMobileOpen(false);
           }}
           user={user}
           collapsed={collapsed}
-          onToggle={() => setCollapsed((v) => !v)}
+          onToggle={() => {
+            setCollapsed((v) => !v);
+            onSidebarToggle?.();
+          }}
+          mobileOpen={mobileSidebarOpen}
+          onMobileToggle={onMobileSidebarToggle}
         />
       </div>
 
@@ -39,7 +28,7 @@ export const Layout = ({ user, onLogout, active, onNavigate, pageTitle, pageSubt
         <Topbar
           user={user}
           onLogout={onLogout}
-          onMenuClick={() => setMobileOpen((v) => !v)}
+          onMenuClick={onMobileSidebarToggle}
           pageTitle={pageTitle}
           pageSubtitle={pageSubtitle}
         />

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { adminLogin } from '../api/auth'; 
+import { adminLogin } from '../api/auth';
+import { Icon } from '../components/ui/Icon';
 
 // Reusable Button Component
 const Button = ({ children, onClick, type = "button", variant = "primary", disabled = false, loading = false, icon = null, className = "" }) => {
@@ -112,19 +113,22 @@ const LoginPage = ({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-white">
-            {/* Decorative floating elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-72 h-72 bg-slate-200/50 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-20 right-10 w-96 h-96 bg-slate-200/50 rounded-full blur-3xl"></div>
+        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 bg-white relative">
+            {/* Decorative floating elements - hide on small screens */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
+                <div className="absolute top-20 left-10 w-64 h-64 sm:w-72 sm:h-72 bg-slate-200/50 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 right-10 w-72 h-72 sm:w-96 sm:h-96 bg-slate-200/50 rounded-full blur-3xl"></div>
             </div>
             
-            <div className="max-w-md w-full animate-fadeInUp">
+            <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg animate-fadeInUp relative z-10">
                 {/* Login Card */}
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
-                    <div className="text-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
-                        <p className="text-gray-500 text-sm mt-1">Sign in to manage your job portal</p>
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10">
+                    <div className="text-center mb-6 sm:mb-8">
+                        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl gradient-brand mb-4 shadow-lg shadow-indigo-500/30">
+                            <Icon name="zap" size={28} strokeWidth={2.5} className="text-white" />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900">Welcome Back</h2>
+                        <p className="text-slate-500 text-xs sm:text-sm mt-1 sm:mt-2">Sign in to manage your job portal</p>
                     </div>
                     
                     <form onSubmit={handleSubmit}>

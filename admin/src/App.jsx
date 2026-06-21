@@ -84,6 +84,8 @@ const Shell = ({ user, onLogout }) => {
   const role = user?.role?.toUpperCase() || '';
   const isHr = role === 'HR';
   const [active, setActive] = useState(isHr ? 'applications' : 'dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const meta = PAGE_META[active] || { title: 'Dashboard', subtitle: '' };
 
   const navigate = (page) => {
@@ -142,14 +144,29 @@ const Shell = ({ user, onLogout }) => {
     }
   };
 
+  const toggleMobileSidebar = () => {
+    setMobileSidebarOpen(!mobileSidebarOpen);
+  };
+
+  const closeMobileSidebar = () => {
+    setMobileSidebarOpen(false);
+  };
+
   return (
     <Layout
       user={user}
       onLogout={onLogout}
       active={active}
-      onNavigate={navigate}
+      onNavigate={(page) => {
+        navigate(page);
+        closeMobileSidebar();
+      }}
       pageTitle={meta.title}
       pageSubtitle={meta.subtitle}
+      sidebarCollapsed={sidebarCollapsed}
+      onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+      mobileSidebarOpen={mobileSidebarOpen}
+      onMobileSidebarToggle={toggleMobileSidebar}
     >
       {renderPage()}
     </Layout>

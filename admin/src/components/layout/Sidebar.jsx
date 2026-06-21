@@ -39,7 +39,7 @@ const secondary = [
   { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
-export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
+export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle, mobileOpen, onMobileToggle }) => {
   const role = user?.role?.toUpperCase() || '';
   const isSuper = role === 'SUPER_ADMIN';
   const isAdmin = isSuper || role === 'ADMIN';
@@ -61,38 +61,58 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
   }, []);
 
   return (
-    <aside
-      className={[
-        'fixed lg:sticky top-0 h-screen left-0 z-40',
-        'flex flex-col bg-white border-r border-slate-200/80',
-        'transition-all duration-300 ease-in-out shadow-sm',
-        collapsed ? 'w-20' : 'w-72',
-        'lg:translate-x-0',
-      ].join(' ')}
-    >
-      <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-xl gradient-brand flex items-center justify-center shadow-lg shadow-indigo-500/30">
+    <>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-30 transition-opacity"
+          onClick={onMobileToggle}
+        />
+      )}
+
+      <aside
+        className={[
+          'fixed lg:sticky top-0 h-screen left-0 z-40',
+          'flex flex-col bg-white border-r border-slate-200/80',
+          'transition-all duration-300 ease-in-out shadow-sm',
+          collapsed ? 'w-20' : 'w-72',
+          'lg:translate-x-0',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        ].join(' ')}
+      >
+      <div className="h-16 flex items-center justify-between px-4 lg:px-5 border-b border-slate-100">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative w-10 h-10 rounded-xl gradient-brand flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
             <Icon name="zap" size={20} strokeWidth={2.5} className="text-white" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full ring-2 ring-white animate-pulse-glow"></span>
           </div>
           {!collapsed && (
-            <div className="animate-fade-in">
-              <div className="text-base font-extrabold tracking-tight text-slate-900">
+            <div className="animate-fade-in min-w-0">
+              <div className="text-base font-extrabold tracking-tight text-slate-900 truncate">
                 Won<span className="text-gradient">Net</span>
               </div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest truncate">
                 {isHr ? 'HR Panel' : 'Admin Panel'}
               </div>
             </div>
           )}
         </div>
-        <button
-          onClick={onToggle}
-          className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition hidden lg:flex items-center justify-center"
-        >
-          <Icon name={collapsed ? 'chevrons-right' : 'chevrons-left'} size={14} />
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Mobile close button */}
+          <button
+            onClick={onMobileToggle}
+            className="lg:hidden w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition flex items-center justify-center"
+          >
+            <Icon name="x" size={18} />
+          </button>
+          {/* Desktop collapse button */}
+          <button
+            onClick={onToggle}
+            className="hidden lg:flex w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition items-center justify-center"
+          >
+            <Icon name={collapsed ? 'chevrons-right' : 'chevrons-left'} size={14} />
+          </button>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -211,38 +231,10 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
           );
         })}
 
-        {!collapsed && isAdmin && !isHr && (
-          <>
-            <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Users ({users.length})
-            </p>
-            {loadingUsers ? (
-              <div className="px-3 py-2 text-xs text-slate-400">Loading users...</div>
-            ) : (
-              <div className="space-y-1 max-h-64 overflow-y-auto">
-                {users.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-                    title={u.name || u.email}
-                  >
-                    <Avatar className="w-6 h-6 text-[10px]">
-                      {(u.name || u.email || '?')[0].toUpperCase()}
-                    </Avatar>
-                    <span className="flex-1 text-xs font-medium text-slate-700 truncate">
-                      {u.name || u.email}
-                    </span>
-                  </div>
-                ))}
-                {users.length === 0 && (
-                  <p className="px-3 py-2 text-xs text-slate-400">No users found</p>
-                )}
-              </div>
-            )}
-          </>
-        )}
+       
       </nav>
     </aside>
+    </>
   );
 };
 
