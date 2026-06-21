@@ -47,6 +47,11 @@ export class ApplicationService {
           job: { connect: { id: data.jobId } },
           user: { connect: { id: data.userId } },
           resumeUrl: data.resumeUrl,
+          linkedin: data.linkedin,
+          portfolio: data.portfolio,
+          motivation: data.motivation,
+          expectedSalary: data.expectedSalary,
+          noticePeriod: data.noticePeriod,
           status: data.status || 'applied',
         },
         include: {
@@ -71,7 +76,7 @@ export class ApplicationService {
       });
     } catch (error) {
       if (error.code === 'P2002') {
-        throw new BadRequestException('Application already exists');
+        throw new BadRequestException('You have already applied for this job');
       }
       throw error;
     }
@@ -232,6 +237,77 @@ export class ApplicationService {
     return application;
   }
 
+
+  async update(id: number, data: UpdateApplicationDto, userId: number, userRole: string) {
+  // Check if application exists
+  const application = await this.prisma.application.findFirst({
+    where: { id },
+    include: { job: true }
+  });
+
+  if (!application) {
+    throw new NotFoundException('Application not found');
+  }
+
+  // If user is not admin, only allow updating their own applications
+  if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+    if (application.userId !== userId) {
+      throw new ForbiddenException('You can only update your own applications');
+    }
+  }
+
+  // Don't allow updating if application is already offered or rejected
+  if (application.status === 'offered') {
+    throw new BadRequestException('Cannot update an application with an offer');
+  }
+
+  if (application.status === 'rejected') {
+    throw new BadRequestException('Cannot update a rejected application');
+  }
+
+  // Remove jobId and userId from update data if present (they shouldn't be updated)
+  const { jobId, userId: _, ...updateData } = data;
+
+  try {
+    return await this.prisma.application.update({
+      where: { id },
+      data: {
+        resumeUrl: updateData.resumeUrl,
+        linkedin: updateData.linkedin,
+        portfolio: updateData.portfolio,
+        motivation: updateData.motivation,
+        expectedSalary: updateData.expectedSalary,
+        noticePeriod: updateData.noticePeriod,
+        status: updateData.status,
+      },
+      include: {
+        job: {
+          include: {
+            company: true,
+            location: true,
+            jobType: true,
+            workMode: true,
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            mobile: true,
+            designation: true,
+          }
+        }
+      }
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      throw new BadRequestException('Application already exists');
+    }
+    throw new BadRequestException('Failed to update application');
+  }
+}
+
   async updateStatus(id: number, status: string, companyId: number, userRole: string) {
     // Get application with job details
     const application = await this.prisma.application.findFirst({
@@ -251,8 +327,6 @@ export class ApplicationService {
       const company = await this.prisma.company.findFirst({
         where: {
           id: application.job.companyId,
-          // Assuming company has userId field
-          // If not, you might need to check differently
         }
       });
 

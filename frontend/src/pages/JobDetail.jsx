@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   MapPin,
   Clock,
@@ -28,10 +28,7 @@ import {
   Zap,
 } from "lucide-react";
 import { getJobById } from "../api/job";
-import { applyForJob } from "../api/application";
-import { uploadResume } from "../api/upload";
-
-import ApplyModal from "../components/ApplyModal";
+import { applyForJob, checkApplication } from "../api/application";
 
 const benefitIconMap = {
   heart: Heart,
@@ -66,7 +63,7 @@ const JobDetail = () => {
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -76,6 +73,14 @@ const JobDetail = () => {
       setLoading(false);
     };
     fetchJob();
+
+    const checkIfApplied = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const res = await checkApplication(Number(id));
+      if (res.success) setHasApplied(res.data.hasApplied);
+    };
+    checkIfApplied();
   }, [id]);
 
   const handleApplySubmit = async (formData) => {
@@ -163,13 +168,6 @@ const JobDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Apply Modal */}
-      <ApplyModal
-        isOpen={isApplyModalOpen}
-        job={job}
-        onClose={() => setIsApplyModalOpen(false)}
-        onSubmit={handleApplySubmit}
-      />
 
       {/* Hero banner */}
       <div className="bg-primary py-10 px-4">
@@ -335,7 +333,7 @@ const JobDetail = () => {
                     className="bg-green-50 text-green-700 text-xs px-3 py-1.5 rounded-full font-medium"
                   >
                     {renderBenefitIcon(jb.benefit.icon)}
-                    {jb.benefit.name}
+                    {jb.benefit?.name}
                   </span>
                 ))}
               </div>
@@ -387,12 +385,21 @@ const JobDetail = () => {
                 </li>
               )}
             </ul>
-            <button
-              onClick={() => setIsApplyModalOpen(true)}
-              className="w-full bg-accent text-primary font-semibold py-3 rounded-md hover:bg-yellow-300 transition text-sm"
-            >
-              Apply Now
-            </button>
+            {hasApplied ? (
+              <button
+                disabled
+                className="w-full bg-gray-200 text-gray-500 font-semibold py-3 rounded-md cursor-not-allowed transition text-sm"
+              >
+                Already Applied
+              </button>
+            ) : (
+              <Link
+                to={`/apply/${id}`}
+                className="w-full bg-accent text-primary font-semibold py-3 rounded-md hover:bg-yellow-300 transition text-sm text-center block"
+              >
+                Apply Now
+              </Link>
+            )}
             <button
               onClick={() => navigate(-1)}
               className="w-full mt-3 border border-primary text-primary font-semibold py-3 rounded-md hover:bg-primary hover:text-white transition text-sm"

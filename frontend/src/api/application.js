@@ -1,3 +1,4 @@
+
 const API_BASE_URL = (import.meta.env.VITE_BASE_URL || 'http://localhost:3000')
   .toString()
   .trim()
@@ -33,7 +34,7 @@ export async function getUserApplications(params = {}) {
   }
 }
 
-// Apply for a job
+// Apply for a job with all fields
 export async function applyForJob(data) {
   try {
     const token = localStorage.getItem('access_token');
@@ -43,7 +44,15 @@ export async function applyForJob(data) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        jobId: data.jobId,
+        resumeUrl: data.resumeUrl,
+        linkedin: data.linkedin,
+        portfolio: data.portfolio,
+        motivation: data.motivation,
+        expectedSalary: data.expectedSalary,
+        noticePeriod: data.noticePeriod,
+      }),
     });
     return await handleResponse(response);
   } catch (error) {
@@ -59,6 +68,24 @@ export async function getApplicationById(id) {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
+    });
+    return await handleResponse(response);
+  } catch (error) {
+    return { success: false, error: { message: 'Network error occurred' } };
+  }
+}
+
+// Update application
+export async function updateApplication(id, data) {
+  try {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/applications/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
     });
     return await handleResponse(response);
   } catch (error) {

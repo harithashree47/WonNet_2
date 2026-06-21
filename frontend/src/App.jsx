@@ -17,6 +17,7 @@ import JobStats from "./components/StatsCounters";
 import JobDetail from "./pages/JobDetail";
 import AboutUs from "./pages/AboutUs";
 import Jobs from "./pages/Jobs";
+import ApplyPage from "./pages/ApplyPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MyApplications from "./pages/MyApplications";
@@ -83,6 +84,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <AboutUs />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/apply/:id"
+            element={
+              <ProtectedRoute>
+                <ApplyPage />
               </ProtectedRoute>
             }
           />

@@ -10,17 +10,11 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
-  ExternalLink,
-  X,
-  Upload,
-  FileText,
-  Loader2,
 } from "lucide-react";
 import { getJobs, searchJobs } from "../api/job";
 import { getActiveCategories } from "../api/category";
 import { getLocations } from "../api/location";
-import { checkApplication, applyForJob } from "../api/application";
-import ApplyModal from "../components/ApplyModal";
+import { checkApplication } from "../api/application";
 
 const JOBS_PER_PAGE = 3;
 
@@ -38,7 +32,6 @@ const Jobs = () => {
   const [liked, setLiked] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [appliedJobs, setAppliedJobs] = useState({});
-  const [checkingJobs, setCheckingJobs] = useState(true);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -59,7 +52,6 @@ const Jobs = () => {
       // Check which jobs the user has already applied to
       const token = localStorage.getItem('access_token');
       if (token && fetchedJobs.length > 0) {
-        setCheckingJobs(true);
         const appliedMap = {};
         await Promise.all(
           fetchedJobs.map(async (job) => {
@@ -70,9 +62,6 @@ const Jobs = () => {
           })
         );
         setAppliedJobs(appliedMap);
-        setCheckingJobs(false);
-      } else {
-        setCheckingJobs(false);
       }
     };
     fetchInitialData();
@@ -147,14 +136,6 @@ const Jobs = () => {
   const formatLocation = (job) => {
     if (job.location) return `${job.location.city}, ${job.location.state}`;
     return "Location not specified";
-  };
-
-  const handleApplyClick = (jobId) => {
-    if (appliedJobs[jobId]) {
-      navigate(`/jobs/${jobId}`);
-    } else {
-      navigate(`/apply/${jobId}`);
-    }
   };
 
   return (
@@ -362,17 +343,17 @@ const Jobs = () => {
                         </button>
 
                         {/* View More */}
-                        <button
-                          onClick={() => navigate(`/jobs/${job.id}`)}
-                          className="bg-primary text-white text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-accent hover:text-primary transition"
+                        <Link
+                          to={`/jobs/${job.id}`}
+                          className="bg-accent text-n text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition text-center"
                         >
                           View More
-                        </button>
+                        </Link>
 
                         {/* Apply / Applied toggle */}
                         {isApplied ? (
                           <button
-                            onClick={() => navigate(`/jobs/${job.id}`)}
+                            onClick={() => navigate(`/my-applications`)}
                             className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-emerald-100 transition inline-flex items-center gap-1.5"
                           >
                             <CheckCircle size={14} />
@@ -381,7 +362,7 @@ const Jobs = () => {
                         ) : (
                           <button
                             onClick={() => navigate(`/apply/${job.id}`)}
-                            className="bg-accent text-primary text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition"
+                            className="bg-primary text-white text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-accent hover:text-primary transition"
                           >
                             Apply Now
                           </button>

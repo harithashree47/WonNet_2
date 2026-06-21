@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   MapPin,
   Clock,
   DollarSign,
   Calendar,
   Heart,
+  CheckCircle,
 } from "lucide-react";
 import { getPublishedJobs } from "../api/job";
+import { checkApplication } from "../api/application";
 
 const tabs = ["Featured", "Full Time", "Part Time"];
 
@@ -15,12 +17,32 @@ const JobListing = () => {
   const [activeTab, setActiveTab] = useState("Featured");
   const [liked, setLiked] = useState({});
   const [jobs, setJobs] = useState([]);
+  const [appliedJobs, setAppliedJobs] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchJobs = async () => {
       const res = await getPublishedJobs();
-      if (res.success) setJobs(res.data);
+      if (res.success) {
+        setJobs(res.data);
+        // Check application status for each job
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          const checkPromises = res.data.map(async (job) => {
+            const checkRes = await checkApplication(job.id);
+            if (checkRes.success) {
+              return { jobId: job.id, hasApplied: checkRes.data.hasApplied };
+            }
+            return { jobId: job.id, hasApplied: false };
+          });
+          const results = await Promise.all(checkPromises);
+          const appliedMap = {};
+          results.forEach(({ jobId, hasApplied }) => {
+            appliedMap[jobId] = hasApplied;
+          });
+          setAppliedJobs(appliedMap);
+        }
+      }
     };
     fetchJobs();
   }, []);
@@ -153,17 +175,30 @@ const JobListing = () => {
                   </button>
 
                   {/* View More */}
-                  <button
-                    onClick={() => navigate(`/jobs/${job.id}`)}
-                    className="bg-primary text-white text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-accent hover:text-primary transition"
+                  <Link
+                    to={`/jobs/${job.id}`}
+                    className="bg-accent text-primary text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition text-center"
                   >
                     View More
-                  </button>
+                  </Link>
 
                   {/* Apply */}
-                  <button className="bg-accent text-primary text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition">
-                    Apply Now
-                  </button>
+                  {appliedJobs[job.id] ? (
+                    <button
+                      onClick={() => navigate(`/my-applications`)}
+                      className="bg-green-50 text-green-700 text-xs md:text-sm px-4 py-2 rounded-md font-semibold border border-green-200 inline-flex items-center gap-1"
+                    >
+                      <CheckCircle size={14} />
+                      Applied
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => navigate(`/apply/${job.id}`)}
+                      className="bg-gray-900 text-white text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-gray-800 transition"
+                    >
+                      Apply Now
+                    </button>
+                  )}
                 </div>
 
                 {/* Deadline */}

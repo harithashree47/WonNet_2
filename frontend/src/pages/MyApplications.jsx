@@ -13,7 +13,6 @@ import {
   Users,
   FileText,
   Loader2,
-  Building2,
   Calendar,
   Heart,
   Search,
@@ -33,11 +32,6 @@ import {
   getUserApplicationStats,
   checkApplication,
 } from "../api/application";
-
-const API_BASE_URL = (import.meta.env.VITE_BASE_URL || 'http://localhost:3000')
-  .toString()
-  .trim()
-  .replace(/^['"]|['"]$/g, '');
 
 const ApplicationStatus = {
   APPLIED: "applied",
@@ -119,11 +113,6 @@ function formatApplied(dateString) {
   });
 }
 
-function getLogoUrl(logo) {
-  if (!logo) return null;
-  return logo.startsWith('http') ? logo : `${API_BASE_URL}${logo.startsWith('/') ? '' : '/'}${logo}`;
-}
-
 function daysSince(dateString) {
   const now = new Date();
   const then = new Date(dateString);
@@ -152,7 +141,6 @@ export default function Applications() {
   const [withdrawing, setWithdrawing] = useState(null);
   const [expandedApp, setExpandedApp] = useState(null);
 
-  // Fetch applications
   useEffect(() => {
     fetchApplications();
     fetchStats();
@@ -248,7 +236,6 @@ export default function Applications() {
   const sortedApps = useMemo(() => {
     let filtered = [...applications];
     
-    // Client-side search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -272,38 +259,36 @@ export default function Applications() {
   );
 
   const topStatsItems = [
-  {
-    key: "totalSent",
-    label: "Total Sent",
-    value: String(stats.totalSent || 0),
-    icon: Send,
-  },
-  {
-    key: "interviews",
-    label: "Interviews",
-    value: String(stats.interviews || 0),
-    icon: Users,
-  },
-  {
-    key: "inReview",
-    label: "In Review",
-    value: String(stats.inReview || 0),
-    icon: Clock,
-  },
-  {
-    key: "responseRate",
-    label: "Response Rate",
-    value: `${stats.responseRate || 0}%`,
-    icon: TrendingUp,
-  },
-];
+    {
+      key: "totalSent",
+      label: "Total Sent",
+      value: String(stats.totalSent || 0),
+      icon: Send,
+    },
+    {
+      key: "interviews",
+      label: "Interviews",
+      value: String(stats.interviews || 0),
+      icon: Users,
+    },
+    {
+      key: "inReview",
+      label: "In Review",
+      value: String(stats.inReview || 0),
+      icon: Clock,
+    },
+    {
+      key: "responseRate",
+      label: "Response Rate",
+      value: `${stats.responseRate || 0}%`,
+      icon: TrendingUp,
+    },
+  ];
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* ===================== BREADCRUMB ===================== */}
       <Breadcrumb items={[{ label: "My Applications", href: "/applications" }]} />
 
-      {/* ===================== STATS STRIP ===================== */}
       <section className="relative overflow-hidden bg-white">
         <div
           className="relative border-b border-gray-200 pb-8"
@@ -343,10 +328,8 @@ export default function Applications() {
         </div>
       </section>
 
-      {/* ===================== RECENT APPLICATIONS ===================== */}
       <section className="py-10 sm:py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          {/* Header row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6" data-aos="fade-up">
             <div className="flex items-center gap-3 sm:gap-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
@@ -374,7 +357,6 @@ export default function Applications() {
             </div>
           </div>
 
-          {/* Search bar */}
           <div className="mb-4" data-aos="fade-up">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -396,7 +378,6 @@ export default function Applications() {
             </div>
           </div>
 
-          {/* Filter dropdown */}
           {filterOpen && (
             <div className="mb-6 bg-white border border-gray-200 rounded-md p-4" data-aos="fade-in">
               <div className="flex flex-wrap gap-2">
@@ -458,7 +439,6 @@ export default function Applications() {
                 const isDeclined = app.status === ApplicationStatus.REJECTED;
                 const isWithdrawn = app.status === ApplicationStatus.WITHDRAWN;
                 const isWithdrawable = !isOffered && !isDeclined && !isWithdrawn;
-                const logoUrl = getLogoUrl(app.job?.company?.logo);
                 const isExpanded = expandedApp === app.id;
                 const showTimeline = !isDeclined && !isWithdrawn;
                 const currentStep = statusTimeline.indexOf(app.status);
@@ -472,28 +452,22 @@ export default function Applications() {
                       isExpanded ? "border-accent" : "border-gray-200"
                     } transition-all duration-300`}
                   >
-                    {/* Main card content */}
                     <div className="px-4 py-4 md:px-6 md:py-5 flex flex-col md:flex-row md:items-center gap-4">
-                      {/* Logo */}
                       <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
-                        {logoUrl ? (
-                          <img
-                            src={logoUrl}
-                            alt={app.job?.company?.name || "Company Logo"}
-                            className="w-12 h-12 object-contain"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.style.display = "none";
-                              e.target.nextSibling.style.display = "flex";
-                            }}
-                          />
-                        ) : null}
-                        <div className={`w-full h-full items-center justify-center ${logoUrl ? "hidden" : "flex"}`}>
-                          <Building2 className="w-6 h-6 text-gray-400" />
-                        </div>
+                        <img
+                          src={
+                            app.job?.company?.logo ||
+                            `https://dummyimage.com/80x80/facc15/111827.png&text=${(app.job?.company?.name || "C")[0]}`
+                          }
+                          alt={app.job?.company?.name || "Company Logo"}
+                          className="w-12 h-12 object-contain"
+                          onError={(e) =>
+                            (e.currentTarget.src =
+                              `https://dummyimage.com/80x80/facc15/111827.png&text=${(app.job?.company?.name || "C")[0]}`)
+                          }
+                        />
                       </div>
 
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-base md:text-lg font-bold text-primary truncate">
@@ -529,7 +503,6 @@ export default function Applications() {
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div className="flex flex-col md:items-end gap-2">
                         <div className="flex items-center gap-3">
                           <button
@@ -575,11 +548,9 @@ export default function Applications() {
                       </div>
                     </div>
 
-                    {/* Expanded details */}
                     {isExpanded && (
                       <div className="border-t border-gray-100 px-4 md:px-6 py-4 bg-gray-50/50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* Left: Application info */}
                           <div>
                             <h4 className="text-sm font-semibold text-primary mb-3">Application Details</h4>
                             <div className="space-y-2.5">
@@ -622,7 +593,6 @@ export default function Applications() {
                             </div>
                           </div>
 
-                          {/* Right: Status Timeline */}
                           <div>
                             <h4 className="text-sm font-semibold text-primary mb-3">Application Progress</h4>
                             {showTimeline ? (
@@ -694,7 +664,6 @@ export default function Applications() {
                           </div>
                         </div>
 
-                        {/* Quick action buttons */}
                         <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap items-center gap-3">
                           {!isOffered && !isDeclined && !isWithdrawn && (
                             <>
@@ -729,7 +698,6 @@ export default function Applications() {
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-10" data-aos="fade-up">
               <button
@@ -762,7 +730,6 @@ export default function Applications() {
             </div>
           )}
 
-          {/* Bottom CTA */}
           <div className="mt-12 border-2 border-dashed border-accent bg-accent/10 rounded-md py-8 sm:py-10 px-4 text-center" data-aos="zoom-in" data-aos-delay="100">
             <p className="text-primary font-medium mb-4 text-sm sm:text-base">
               Looking for more opportunities that match your profile?
@@ -777,7 +744,6 @@ export default function Applications() {
         </div>
       </section>
 
-      {/* ===================== FINAL CTA ===================== */}
       <section className="py-14 px-4 bg-primary">
         <div className="max-w-3xl mx-auto text-center" data-aos="fade-up">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">

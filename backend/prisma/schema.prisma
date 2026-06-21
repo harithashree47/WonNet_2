@@ -236,12 +236,20 @@ model Application {
   userId    Int
 
   resumeUrl String?
+  linkedin  String?
+  portfolio String?
+
+  motivation      String?
+  expectedSalary  String?
+  noticePeriod    String? 
   status    String   @default("applied")
 
   createdAt DateTime @default(now())
 
   job       Job  @relation(fields: [jobId], references: [id])
   user      User @relation(fields: [userId], references: [id])
+
+  @@unique([jobId, userId])
 }
 
 enum Role {

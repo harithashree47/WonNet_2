@@ -86,6 +86,24 @@ export class ApplicationController {
     return this.applicationService.findOne(+id, req.user.sub, req.user.role);
   }
 
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update application details' })
+  update(
+    @Param('id') id: string, 
+    @Body() updateApplicationDto: UpdateApplicationDto, 
+    @Req() req
+  ) {
+    // Only allow users to update their own applications (unless admin)
+    return this.applicationService.update(
+      +id, 
+      updateApplicationDto, 
+      req.user.sub, 
+      req.user.role
+    );
+  }
+
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
