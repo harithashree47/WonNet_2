@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { adminLogin } from '../api/auth';
 import { Icon } from '../components/ui/Icon';
+import { Globe2 } from 'lucide-react';
 
 // Reusable Button Component
 const Button = ({ children, onClick, type = "button", variant = "primary", disabled = false, loading = false, icon = null, className = "" }) => {
     const baseClasses = "px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2";
     const variantClasses = variant === "primary" 
-        ? "bg-slate-800 text-white shadow-lg hover:bg-slate-700 hover:shadow-xl" 
+        ? "bg-primary text-white shadow-lg hover:bg-secondary hover:shadow-xl" 
         : "bg-gray-200 hover:bg-gray-300 text-gray-700";
     
     return (
@@ -41,7 +42,7 @@ const Input = ({ label, type = "text", value, onChange, placeholder, error, icon
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                className={`w-full px-4 py-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/80`}
+                className={`w-full px-4 py-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all bg-white/80`}
             />
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
         </div>
@@ -100,11 +101,9 @@ const LoginPage = ({ onLogin }) => {
         setLoading(true);
         setLoginError('');
 
-        // Using the imported adminLogin function
         const result = await adminLogin(email, password);
 
         if (result.success) {
-            // Update local state and persist session via onLogin callback
             onLogin(result.data.user);
         } else {
             setLoginError(result.error.message || 'Invalid email or password. Please try again.');
@@ -113,22 +112,34 @@ const LoginPage = ({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 bg-white relative">
-            {/* Decorative floating elements - hide on small screens */}
+        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 bg-gray-50 relative">
+            {/* Decorative floating elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
-                <div className="absolute top-20 left-10 w-64 h-64 sm:w-72 sm:h-72 bg-slate-200/50 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-20 right-10 w-72 h-72 sm:w-96 sm:h-96 bg-slate-200/50 rounded-full blur-3xl"></div>
+                <div className="absolute top-20 left-10 w-64 h-64 sm:w-72 sm:h-72 bg-accent/20 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 right-10 w-72 h-72 sm:w-96 sm:h-96 bg-primary/10 rounded-full blur-3xl"></div>
             </div>
             
             <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg animate-fadeInUp relative z-10">
                 {/* Login Card */}
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10">
+                <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-gray-100">
+                    {/* Accent bar */}
+                    
+                    
                     <div className="text-center mb-6 sm:mb-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl gradient-brand mb-4 shadow-lg shadow-indigo-500/30">
-                            <Icon name="zap" size={28} strokeWidth={2.5} className="text-white" />
+                        {/* Logo - Same as user login page */}
+                        <div className="flex items-center justify-center gap-3 mb-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-accent border-2 border-accent/60">
+                                <Globe2 size={24} className="text-accent" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-primary">
+                                    Won<span className="text-accent">Net!</span>
+                                </h1>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    Admin Panel
+                                </p>
+                            </div>
                         </div>
-                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900">Welcome Back</h2>
-                        <p className="text-slate-500 text-xs sm:text-sm mt-1 sm:mt-2">Sign in to manage your job portal</p>
                     </div>
                     
                     <form onSubmit={handleSubmit}>
@@ -153,7 +164,7 @@ const LoginPage = ({ onLogin }) => {
                                     value={password}
                                     onChange={handlePasswordChange}
                                     placeholder="••••••••"
-                                    className={`w-full px-4 py-3 border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/80 pr-12`}
+                                    className={`w-full px-4 py-3 border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all bg-white/80 pr-12`}
                                 />
                                 <button
                                     type="button"
@@ -177,8 +188,6 @@ const LoginPage = ({ onLogin }) => {
                             {loading ? 'Authenticating...' : 'Sign In'}
                         </Button>
                     </form>
-                    
-                   
                 </div>
             </div>
         </div>

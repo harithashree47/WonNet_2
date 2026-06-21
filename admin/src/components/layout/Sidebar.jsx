@@ -3,6 +3,7 @@ import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
 import { getUsers } from '../../api/auth';
+import { Globe2 } from 'lucide-react';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
@@ -82,18 +83,18 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle, mobileO
       >
       <div className="h-16 flex items-center justify-between px-4 lg:px-5 border-b border-slate-100">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="relative w-10 h-10 rounded-xl gradient-brand flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
-            <Icon name="zap" size={20} strokeWidth={2.5} className="text-white" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full ring-2 ring-white animate-pulse-glow"></span>
+          {/* Logo with frontend colors */}
+          <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-primary text-accent border border-accent/60 flex-shrink-0">
+            <Globe2 size={22} />
           </div>
           {!collapsed && (
-            <div className="animate-fade-in min-w-0">
-              <div className="text-base font-extrabold tracking-tight text-slate-900 truncate">
-                Won<span className="text-gradient">Net</span>
-              </div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest truncate">
+            <div className="leading-tight min-w-0">
+              <span className="block text-lg md:text-xl font-semibold text-primary truncate">
+                Won<span className="text-accent">Net!</span>
+              </span>
+              <span className="hidden md:block text-[11px] text-gray-500 truncate">
                 {isHr ? 'HR Panel' : 'Admin Panel'}
-              </div>
+              </span>
             </div>
           )}
         </div>
@@ -132,13 +133,13 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle, mobileO
                 className={[
                   'group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all',
                   isActive
-                    ? 'bg-slate-800 text-white shadow-lg shadow-slate-500/30'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                   collapsed ? 'justify-center' : '',
                 ].join(' ')}
                 title={collapsed ? item.label : ''}
               >
-                <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'].join(' ')}>
+                <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-accent'].join(' ')}>
                   <Icon name={item.icon} size={16} strokeWidth={2.25} />
                 </span>
                 {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
@@ -159,13 +160,13 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle, mobileO
                 className={[
                   'group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all',
                   isActive
-                    ? 'bg-slate-800 text-white shadow-lg shadow-slate-500/30'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                   collapsed ? 'justify-center' : '',
                 ].join(' ')}
                 title={collapsed ? item.label : ''}
               >
-                <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'].join(' ')}>
+                <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-accent'].join(' ')}>
                   <Icon name={item.icon} size={16} strokeWidth={2.25} />
                 </span>
                 {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
@@ -189,13 +190,13 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle, mobileO
               className={[
                 'group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all',
                 isActive
-                  ? 'bg-slate-800 text-white shadow-lg shadow-slate-500/30'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/30'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                 collapsed ? 'justify-center' : '',
               ].join(' ')}
               title={collapsed ? item.label : ''}
             >
-              <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'].join(' ')}>
+              <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-accent'].join(' ')}>
                 <Icon name={item.icon} size={16} strokeWidth={2.25} />
               </span>
               {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
@@ -223,7 +224,7 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle, mobileO
                 collapsed ? 'justify-center' : '',
               ].join(' ')}
             >
-              <span className="w-5 h-5 inline-flex items-center justify-center text-slate-400 group-hover:text-indigo-600">
+              <span className="w-5 h-5 inline-flex items-center justify-center text-slate-400 group-hover:text-accent">
                 <Icon name={item.icon} size={16} strokeWidth={2.25} />
               </span>
               {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
