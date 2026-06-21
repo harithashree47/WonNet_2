@@ -8,11 +8,11 @@ const Header = () => {
   const navigate = useNavigate();
 
   // ✅ Check token
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("access_token");
 
   // ✅ Logout function
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
     navigate("/login");
   };
 
@@ -20,7 +20,7 @@ const Header = () => {
     { label: "Home", href: "/" },
     { label: "About", href: "/about" },
     { label: "Jobs", href: "/jobs" },
-    { label: "My Applications", href: "/applications" },
+    { label: "My Applications", href: "/my-applications" },
   ];
 
   const isActive = (href) => {

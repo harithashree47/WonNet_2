@@ -19,6 +19,7 @@ import AboutUs from "./pages/AboutUs";
 import Jobs from "./pages/Jobs";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import MyApplications from "./pages/MyApplications";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
@@ -82,6 +83,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <AboutUs />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/my-applications"
+            element={
+              <ProtectedRoute>
+                <MyApplications />
               </ProtectedRoute>
             }
           />

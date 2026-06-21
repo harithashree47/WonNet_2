@@ -28,6 +28,10 @@ import {
   Zap,
 } from "lucide-react";
 import { getJobById } from "../api/job";
+import { applyForJob } from "../api/application";
+import { uploadResume } from "../api/upload";
+
+import ApplyModal from "../components/ApplyModal";
 
 const benefitIconMap = {
   heart: Heart,
@@ -62,6 +66,7 @@ const JobDetail = () => {
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -72,6 +77,41 @@ const JobDetail = () => {
     };
     fetchJob();
   }, [id]);
+
+  const handleApplySubmit = async (formData) => {
+    try {
+      const file = formData.get("resume");
+      const coverLetter = formData.get("coverLetter") || "";
+
+      let resumeUrl;
+      if (file) {
+        const uploadResult = await uploadResume(file);
+        if (!uploadResult.success) {
+          alert("Error uploading resume. Please try again.");
+          return false;
+        }
+        resumeUrl = uploadResult.url;
+      }
+
+      const result = await applyForJob({
+        jobId: Number(id),
+        resumeUrl,
+      });
+      if (result.success) {
+        // Application submitted successfully
+        console.log("Application submitted:", result.data);
+        return true;
+      } else {
+        console.error("Error submitting application:", result.error);
+        alert("Error submitting application. Please try again.");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error submitting application. Please try again.");
+      return false;
+    }
+  };
 
   if (loading) {
     return (
@@ -123,6 +163,14 @@ const JobDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Apply Modal */}
+      <ApplyModal
+        isOpen={isApplyModalOpen}
+        job={job}
+        onClose={() => setIsApplyModalOpen(false)}
+        onSubmit={handleApplySubmit}
+      />
+
       {/* Hero banner */}
       <div className="bg-primary py-10 px-4">
         <div className="max-w-4xl mx-auto">
@@ -339,7 +387,10 @@ const JobDetail = () => {
                 </li>
               )}
             </ul>
-            <button className="w-full bg-accent text-primary font-semibold py-3 rounded-md hover:bg-yellow-300 transition text-sm">
+            <button
+              onClick={() => setIsApplyModalOpen(true)}
+              className="w-full bg-accent text-primary font-semibold py-3 rounded-md hover:bg-yellow-300 transition text-sm"
+            >
               Apply Now
             </button>
             <button
