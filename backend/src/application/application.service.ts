@@ -308,7 +308,7 @@ export class ApplicationService {
   }
 }
 
-  async updateStatus(id: number, status: string, companyId: number, userRole: string) {
+  async updateStatus(id: number, status: string, companyId: number, userRole: string, hrCompanyId?: number) {
     // Get application with job details
     const application = await this.prisma.application.findFirst({
       where: { id },
@@ -322,16 +322,14 @@ export class ApplicationService {
     }
 
     // Check permission
-    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
-      // Check if user owns the company
-      const company = await this.prisma.company.findFirst({
-        where: {
-          id: application.job.companyId,
-        }
-      });
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'HR') {
+      throw new ForbiddenException('You do not have permission to update this application');
+    }
 
-      if (!company) {
-        throw new ForbiddenException('You do not have permission to update this application');
+    // HR can only update applications for jobs in their company
+    if (userRole === 'HR') {
+      if (!hrCompanyId || application.job.companyId !== hrCompanyId) {
+        throw new ForbiddenException('You can only update applications for jobs in your company');
       }
     }
 
@@ -559,5 +557,67 @@ export class ApplicationService {
     } catch (error) {
       throw new BadRequestException('Failed to delete application');
     }
+  }
+
+  async getAllApplications(companyId: number, userRole: string, query: QueryApplicationDto) {
+    const { status, page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    let where: any = {};
+
+    if (userRole === 'HR') {
+      // HR can only see applications for jobs in their company
+      const jobs = await this.prisma.job.findMany({
+        where: { companyId },
+        select: { id: true }
+      });
+      const jobIds = jobs.map(job => job.id);
+      where.jobId = { in: jobIds };
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    const [applications, total] = await Promise.all([
+      this.prisma.application.findMany({
+        where,
+        include: {
+          job: {
+            include: {
+              company: true,
+              location: true,
+              jobType: true,
+              workMode: true,
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              mobile: true,
+              designation: true,
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        skip,
+        take: limit
+      }),
+      this.prisma.application.count({ where })
+    ]);
+
+    return {
+      data: applications,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 }

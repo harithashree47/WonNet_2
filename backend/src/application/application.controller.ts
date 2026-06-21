@@ -46,11 +46,20 @@ export class ApplicationController {
 
   @Get('company/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'HR')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get company\'s application statistics' })
   getCompanyStats(@Req() req) {
     return this.applicationService.getCompanyApplicationStats(req.user.companyId);
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN', 'HR')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all applications (Admin/HR only)' })
+  findAll(@Query() query: QueryApplicationDto, @Req() req) {
+    return this.applicationService.getAllApplications(req.user.companyId, req.user.role, query);
   }
 
   @Get('job/:jobId')
@@ -106,7 +115,7 @@ export class ApplicationController {
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'HR')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update application status' })
   updateStatus(
@@ -114,11 +123,13 @@ export class ApplicationController {
     @Body('status') status: string,
     @Req() req
   ) {
+    const hrCompanyId = req.user.role === 'HR' ? req.user.companyId : undefined;
     return this.applicationService.updateStatus(
       +id, 
       status, 
       req.user.companyId, 
-      req.user.role
+      req.user.role,
+      hrCompanyId
     );
   }
 

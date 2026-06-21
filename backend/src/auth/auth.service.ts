@@ -56,6 +56,17 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mobile: true,
+        password: true,
+        designation: true,
+        role: true,
+        status: true,
+        companyId: true,
+      },
     });
 
     if (!user) {
@@ -78,6 +89,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       status: user.status,
+      companyId: user.companyId,
     };
 
     return {
@@ -91,6 +103,7 @@ export class AuthService {
         designation: user.designation,
         role: user.role,
         status: user.status,
+        companyId: user.companyId,
       },
     };
   }
@@ -214,6 +227,17 @@ export class AuthService {
   async adminLogin(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mobile: true,
+        password: true,
+        designation: true,
+        role: true,
+        status: true,
+        companyId: true,
+      },
     });
 
     if (!user) {
@@ -242,6 +266,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       status: user.status,
+      companyId: user.companyId,
     };
 
     return {
@@ -255,6 +280,7 @@ export class AuthService {
         designation: user.designation,
         role: user.role,
         status: user.status,
+        companyId: user.companyId,
       },
     };
   }
