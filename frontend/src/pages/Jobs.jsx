@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   MapPin,
   Clock,
@@ -9,10 +9,18 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  CheckCircle,
+  ExternalLink,
+  X,
+  Upload,
+  FileText,
+  Loader2,
 } from "lucide-react";
 import { getJobs, searchJobs } from "../api/job";
 import { getActiveCategories } from "../api/category";
 import { getLocations } from "../api/location";
+import { checkApplication, applyForJob } from "../api/application";
+import ApplyModal from "../components/ApplyModal";
 
 const JOBS_PER_PAGE = 3;
 
@@ -29,6 +37,8 @@ const Jobs = () => {
   const [filtered, setFiltered] = useState([]);
   const [liked, setLiked] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [appliedJobs, setAppliedJobs] = useState({});
+  const [checkingJobs, setCheckingJobs] = useState(true);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -37,12 +47,33 @@ const Jobs = () => {
         getActiveCategories(),
         getLocations(),
       ]);
+      let fetchedJobs = [];
       if (jobsRes.success) {
-        setJobs(jobsRes.data);
-        setFiltered(jobsRes.data);
+        fetchedJobs = jobsRes.data;
+        setJobs(fetchedJobs);
+        setFiltered(fetchedJobs);
       }
       if (catRes.success) setCategories(catRes.data);
       if (locRes.success) setLocations(locRes.data);
+
+      // Check which jobs the user has already applied to
+      const token = localStorage.getItem('access_token');
+      if (token && fetchedJobs.length > 0) {
+        setCheckingJobs(true);
+        const appliedMap = {};
+        await Promise.all(
+          fetchedJobs.map(async (job) => {
+            const res = await checkApplication(job.id);
+            if (res.success && res.data.hasApplied) {
+              appliedMap[job.id] = true;
+            }
+          })
+        );
+        setAppliedJobs(appliedMap);
+        setCheckingJobs(false);
+      } else {
+        setCheckingJobs(false);
+      }
     };
     fetchInitialData();
   }, []);
@@ -116,6 +147,14 @@ const Jobs = () => {
   const formatLocation = (job) => {
     if (job.location) return `${job.location.city}, ${job.location.state}`;
     return "Location not specified";
+  };
+
+  const handleApplyClick = (jobId) => {
+    if (appliedJobs[jobId]) {
+      navigate(`/jobs/${jobId}`);
+    } else {
+      navigate(`/apply/${jobId}`);
+    }
   };
 
   return (
@@ -237,6 +276,9 @@ const Jobs = () => {
               </span>{" "}
               jobs found
             </p>
+            <p className="text-xs text-gray-400">
+              {Object.keys(appliedJobs).length} applied
+            </p>
           </div>
 
           {/* Job cards */}
@@ -246,91 +288,115 @@ const Jobs = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {paginated.map((job, index) => (
-                <div
-                  key={job.id}
-                  data-aos="fade-up"
-                  data-aos-delay={index * 100}
-                  className="bg-white rounded-md shadow-sm border border-gray-200
-                             px-4 py-4 md:px-6 md:py-5
-                             flex flex-col md:flex-row md:items-center gap-4"
-                >
-                  {/* Logo */}
-                  <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
-                    <img
-                      src={
-                        job.company?.logo ||
-                        `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`
-                      }
-                      alt={job.company?.name || "Company"}
-                      className="w-12 h-12 object-contain"
-                      onError={(e) =>
-                        (e.currentTarget.src = `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`)
-                      }
-                    />
-                  </div>
+              {paginated.map((job, index) => {
+                const isApplied = appliedJobs[job.id];
+                return (
+                  <div
+                    key={job.id}
+                    data-aos="fade-up"
+                    data-aos-delay={index * 100}
+                    className={`bg-white rounded-md shadow-sm border ${
+                      isApplied ? "border-accent/50" : "border-gray-200"
+                    } px-4 py-4 md:px-6 md:py-5 flex flex-col md:flex-row md:items-center gap-4 transition`}
+                  >
+                    {/* Logo */}
+                    <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
+                      <img
+                        src={
+                          job.company?.logo ||
+                          `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`
+                        }
+                        alt={job.company?.name || "Company"}
+                        className="w-12 h-12 object-contain"
+                        onError={(e) =>
+                          (e.currentTarget.src = `https://dummyimage.com/80x80/facc15/111827.png&text=${(job.company?.name || "C")[0]}`)
+                        }
+                      />
+                    </div>
 
-                  {/* Info */}
-                  <div className="flex-1">
-                    <h3 className="text-base md:text-lg font-bold text-primary">
-                      {job.title}
-                    </h3>
-                    <p className="text-xs text-gray-400 mb-1">
-                      {job.company?.name || "N/A"}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <MapPin size={13} className="text-accent" />
-                        {formatLocation(job)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={13} className="text-accent" />
-                        {job.jobType?.name || "N/A"}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign size={13} className="text-accent" />
-                        {formatSalary(job)}
+                    {/* Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base md:text-lg font-bold text-primary">
+                          {job.title}
+                        </h3>
+                        {isApplied && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            <CheckCircle size={10} />
+                            Applied
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mb-1">
+                        {job.company?.name || "N/A"}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin size={13} className="text-accent" />
+                          {formatLocation(job)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={13} className="text-accent" />
+                          {job.jobType?.name || "N/A"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign size={13} className="text-accent" />
+                          {formatSalary(job)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col md:items-end gap-2">
+                      <div className="flex items-center gap-3">
+                        {/* Like */}
+                        <button
+                          onClick={() => toggleLike(job.id)}
+                          className="text-gray-400 hover:text-red-500 transition"
+                        >
+                          <Heart
+                            size={20}
+                            fill={liked[job.id] ? "#ef4444" : "none"}
+                            className={liked[job.id] ? "text-red-500" : ""}
+                          />
+                        </button>
+
+                        {/* View More */}
+                        <button
+                          onClick={() => navigate(`/jobs/${job.id}`)}
+                          className="bg-primary text-white text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-accent hover:text-primary transition"
+                        >
+                          View More
+                        </button>
+
+                        {/* Apply / Applied toggle */}
+                        {isApplied ? (
+                          <button
+                            onClick={() => navigate(`/jobs/${job.id}`)}
+                            className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-emerald-100 transition inline-flex items-center gap-1.5"
+                          >
+                            <CheckCircle size={14} />
+                            Applied
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => navigate(`/apply/${job.id}`)}
+                            className="bg-accent text-primary text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition"
+                          >
+                            Apply Now
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Deadline */}
+                      <span className="flex items-center gap-1 text-xs text-gray-400">
+                        <Calendar size={12} className="text-accent" />
+                        Date Line: {formatDeadline(job.applyDeadline)}
                       </span>
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col md:items-end gap-2">
-                    <div className="flex items-center gap-3">
-                      {/* Like */}
-                      <button
-                        onClick={() => toggleLike(job.id)}
-                        className="text-gray-400 hover:text-red-500 transition"
-                      >
-                        <Heart
-                          size={20}
-                          fill={liked[job.id] ? "#ef4444" : "none"}
-                          className={liked[job.id] ? "text-red-500" : ""}
-                        />
-                      </button>
-
-                      {/* View More */}
-                      <button
-                        onClick={() => navigate(`/jobs/${job.id}`)}
-                        className="bg-primary text-white text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-accent hover:text-primary transition"
-                      >
-                        View More
-                      </button>
-
-                      {/* Apply */}
-                      <button className="bg-accent text-primary text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition">
-                        Apply Now
-                      </button>
-                    </div>
-
-                    {/* Deadline */}
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
-                      <Calendar size={12} className="text-accent" />
-                      Date Line: {formatDeadline(job.applyDeadline)}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
