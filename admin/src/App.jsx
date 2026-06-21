@@ -17,6 +17,7 @@ import { EmploymentTypesPage } from './pages/EmploymentTypesPage';
 import { EducationLevelsPage } from './pages/EducationLevelsPage';
 import { DepartmentsPage } from './pages/DepartmentsPage';
 import { WorkModePage } from './pages/WorkModePage'; // ← IMPORT WORK MODE PAGE
+import { HrManagementPage } from './pages/HrManagementPage';
 import { Card, CardHeader, CardBody } from './components/ui/Card';
 import { Button } from './components/ui/Button';
 import { Badge } from './components/ui/Badge';
@@ -30,6 +31,7 @@ const PAGE_META = {
   users: { title: 'Users', subtitle: 'Manage all registered users' },
   jobs: { title: 'Jobs', subtitle: 'Manage all job postings' },
   staff: { title: 'Staff Management', subtitle: 'Manage administrative access and team roles' },
+  hrs: { title: 'HR Management', subtitle: 'Create and manage HR accounts' },
   companies: { title: 'Companies', subtitle: 'Manage all registered companies' },
   applications: { title: 'Applications', subtitle: 'Review and manage applications' },
   analytics: { title: 'Analytics', subtitle: 'Deep insights into your platform' },
@@ -79,8 +81,21 @@ const PlaceholderPage = ({ id }) => (
 );
 
 const Shell = ({ user, onLogout }) => {
-  const [active, setActive] = useState('dashboard');
+  const role = user?.role?.toUpperCase() || '';
+  const isHr = role === 'HR';
+  const [active, setActive] = useState(isHr ? 'applications' : 'dashboard');
   const meta = PAGE_META[active] || { title: 'Dashboard', subtitle: '' };
+
+  const navigate = (page) => {
+    if (isHr) {
+      const hrAllowed = ['dashboard', 'applications', 'messages', 'settings'];
+      if (!hrAllowed.includes(page)) {
+        setActive('dashboard');
+        return;
+      }
+    }
+    setActive(page);
+  };
 
   const renderPage = () => {
     switch (active) {
@@ -92,6 +107,8 @@ const Shell = ({ user, onLogout }) => {
         return <JobsPage />;
       case 'staff':
         return <StaffManagementPage />;
+      case 'hrs':
+        return <HrManagementPage />;
       case 'companies':
         return <CompaniesPage />;
       case 'applications':
@@ -130,7 +147,7 @@ const Shell = ({ user, onLogout }) => {
       user={user}
       onLogout={onLogout}
       active={active}
-      onNavigate={setActive}
+      onNavigate={navigate}
       pageTitle={meta.title}
       pageSubtitle={meta.subtitle}
     >

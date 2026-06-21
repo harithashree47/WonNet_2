@@ -210,7 +210,7 @@ export class AuthService {
     });
   }
 
-  // ✅ ADMIN/SUPER ADMIN LOGIN (SINGLE ENDPOINT FOR BOTH)
+  // ✅ ADMIN/SUPER ADMIN/HR LOGIN (SINGLE ENDPOINT FOR ALL STAFF)
   async adminLogin(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -220,9 +220,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if user has admin role (ADMIN or SUPER_ADMIN)
-    if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
-      throw new UnauthorizedException('Access denied. Admin or Super Admin privileges required.');
+    // Check if user has admin or HR role
+    const allowedRoles = ['ADMIN', 'SUPER_ADMIN', 'HR'];
+    if (!allowedRoles.includes(user.role)) {
+      throw new UnauthorizedException('Access denied. Staff privileges required.');
     }
 
     // ✅ Block inactive admins from logging in

@@ -8,11 +8,19 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
   { id: 'users', label: 'Users', icon: 'users' },
   { id: 'staff', label: 'Staff Management', icon: 'shield' },
+  { id: 'hrs', label: 'HR Management', icon: 'user-plus' },
   { id: 'jobs', label: 'Jobs', icon: 'briefcase' },
   { id: 'companies', label: 'Companies', icon: 'building' },
   { id: 'applications', label: 'Applications', icon: 'file-check' },
   { id: 'analytics', label: 'Analytics', icon: 'bar-chart' },
   { id: 'messages', label: 'Messages', icon: 'mail' },
+];
+
+const hrNavItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
+  { id: 'applications', label: 'Applications', icon: 'file-check' },
+  { id: 'messages', label: 'Messages', icon: 'mail' },
+  { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
 const masterDataItems = [
@@ -23,7 +31,7 @@ const masterDataItems = [
   { id: 'locations', label: 'Locations', icon: 'map-pin' },
   { id: 'education-levels', label: 'Education Levels', icon: 'award' },
   { id: 'departments', label: 'Departments', icon: 'building' },
-    { id: 'skills', label: 'Skills', icon: 'code' },          
+  { id: 'skills', label: 'Skills', icon: 'code' },          
   { id: 'benefits', label: 'Benefits', icon: 'gift' },
 ];
 
@@ -35,6 +43,7 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
   const role = user?.role?.toUpperCase() || '';
   const isSuper = role === 'SUPER_ADMIN';
   const isAdmin = isSuper || role === 'ADMIN';
+  const isHr = role === 'HR';
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
@@ -43,7 +52,6 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
       setLoadingUsers(true);
       const res = await getUsers();
       if (res.success) {
-        // Filter only users with role === 'USER'
         const regularUsers = res.data.filter(u => u.role?.toUpperCase() === 'USER');
         setUsers(regularUsers);
       }
@@ -74,7 +82,7 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
                 Won<span className="text-gradient">Net</span>
               </div>
               <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
-                Admin Panel
+                {isHr ? 'HR Panel' : 'Admin Panel'}
               </div>
             </div>
           )}
@@ -93,41 +101,66 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
             Main
           </p>
         )}
-        {navItems.map((item) => {
-          // Only show Staff Management to Admins and Super Admins
-          if (item.id === 'staff' && !isAdmin) {
-            return null;
-          }
+        
+        {isHr ? (
+          hrNavItems.map((item) => {
+            const isActive = active === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate?.(item.id)}
+                className={[
+                  'group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all',
+                  isActive
+                    ? 'bg-slate-800 text-white shadow-lg shadow-slate-500/30'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                  collapsed ? 'justify-center' : '',
+                ].join(' ')}
+                title={collapsed ? item.label : ''}
+              >
+                <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'].join(' ')}>
+                  <Icon name={item.icon} size={16} strokeWidth={2.25} />
+                </span>
+                {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
+              </button>
+            );
+          })
+        ) : (
+          navItems.map((item) => {
+            if ((item.id === 'staff' || item.id === 'hrs') && !isSuper) {
+              return null;
+            }
 
-          const isActive = active === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate?.(item.id)}
-              className={[
-                'group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all',
-                isActive
-                  ? 'bg-slate-800 text-white shadow-lg shadow-slate-500/30'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-                collapsed ? 'justify-center' : '',
-              ].join(' ')}
-              title={collapsed ? item.label : ''}
-            >
-              <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'].join(' ')}>
-                <Icon name={item.icon} size={16} strokeWidth={2.25} />
-              </span>
-              {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
-            </button>
-          );
-        })}
+            const isActive = active === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate?.(item.id)}
+                className={[
+                  'group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all',
+                  isActive
+                    ? 'bg-slate-800 text-white shadow-lg shadow-slate-500/30'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                  collapsed ? 'justify-center' : '',
+                ].join(' ')}
+                title={collapsed ? item.label : ''}
+              >
+                <span className={['w-5 h-5 inline-flex items-center justify-center', isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600'].join(' ')}>
+                  <Icon name={item.icon} size={16} strokeWidth={2.25} />
+                </span>
+                {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
+              </button>
+            );
+          })
+        )}
 
-        {!collapsed && isAdmin && (
+        {!collapsed && isAdmin && !isHr && (
           <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             Master Data
           </p>
         )}
-        {collapsed && isAdmin && <div className="my-3 mx-2 border-t border-slate-100"></div>}
-        {isAdmin && masterDataItems.map((item) => {
+        {collapsed && isAdmin && !isHr && <div className="my-3 mx-2 border-t border-slate-100"></div>}
+        {isAdmin && !isHr && masterDataItems.map((item) => {
           const isActive = active === item.id;
           return (
             <button
@@ -150,13 +183,13 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
           );
         })}
 
-        {!collapsed && (
+        {!collapsed && !isHr && (
           <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             System
           </p>
         )}
-        {collapsed && <div className="my-3 mx-2 border-t border-slate-100"></div>}
-        {secondary.map((item) => {
+        {collapsed && !isHr && <div className="my-3 mx-2 border-t border-slate-100"></div>}
+        {!isHr && secondary.map((item) => {
           const isActive = active === item.id;
           return (
             <button
@@ -178,8 +211,7 @@ export const Sidebar = ({ active, onNavigate, user, collapsed, onToggle }) => {
           );
         })}
 
-        {/* Users Section - Only show to admins */}
-        {!collapsed && isAdmin && (
+        {!collapsed && isAdmin && !isHr && (
           <>
             <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Users ({users.length})

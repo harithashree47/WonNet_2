@@ -16,8 +16,9 @@ import { SkillModule } from './skill/skill.module';
 import { BenefitModule } from './benefit/benefit.module';
 import { JobModule } from './job/job.module';
 import { ApplicationModule } from './application/application.module';
+import { HrModule } from './hr/hr.module';
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule, JobModule, ApplicationModule],
+  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule, JobModule, ApplicationModule, HrModule],
   controllers: [AppController],
   providers: [AppService],
 })

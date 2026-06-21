@@ -16,6 +16,8 @@ model User {
   mobile    String   @unique
   designation String?
   role      Role @default(USER)
+  companyId Int?  // Relation to company (if user is an HR/Admin)
+  company   Company? @relation(fields: [companyId], references: [id])
   status    String   @default("active")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,6 +127,7 @@ model Company {
   location   Location? @relation(fields: [locationId], references: [id])
 
   jobs Job[]
+  users User[]
 
   @@map("companies")
 }
@@ -256,4 +259,5 @@ enum Role {
   USER
   ADMIN
   SUPER_ADMIN
+  HR
 }
