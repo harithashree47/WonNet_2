@@ -145,10 +145,16 @@ const JobDetail = () => {
   }
 
   const formatSalary = () => {
-    if (job.salaryMin && job.salaryMax)
-      return `${job.currency || ""} ${job.salaryMin} - ${job.salaryMax}`;
-    if (job.salaryMin) return `${job.currency || ""} ${job.salaryMin}+`;
-    if (job.salaryMax) return `Up to ${job.currency || ""} ${job.salaryMax}`;
+    const currency = job.currency || "INR";
+    const toLakhs = (val) => {
+      if (!val) return null;
+      return val <= 1000 ? Number(val).toFixed(1) : (val / 100000).toFixed(1);
+    };
+    const min = toLakhs(job.salaryMin);
+    const max = toLakhs(job.salaryMax);
+    if (min && max) return `${currency} ${min} - ${max} LPA`;
+    if (min) return `${currency} ${min}+ LPA`;
+    if (max) return `Up to ${currency} ${max} LPA`;
     return "Negotiable";
   };
 
@@ -232,6 +238,14 @@ const JobDetail = () => {
               <Building2 size={13} className="text-accent" />
               {job.company?.name || "N/A"}
             </span>
+            {job.experienceLevel && (
+              <span className="flex items-center gap-1.5 text-xs bg-white/10 text-gray-200 px-3 py-1.5 rounded-full">
+                <Briefcase size={13} className="text-accent" />
+                {job.experienceLevel.minYears != null && job.experienceLevel.maxYears != null
+                  ? `${job.experienceLevel.label} (${job.experienceLevel.minYears} - ${job.experienceLevel.maxYears} Years)`
+                  : job.experienceLevel.label}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -375,7 +389,11 @@ const JobDetail = () => {
               {job.experienceLevel && (
                 <li className="flex items-center gap-2">
                   <Briefcase size={15} className="text-accent flex-shrink-0" />
-                  <span>{job.experienceLevel.label}</span>
+                  <span>
+                    {job.experienceLevel.minYears != null && job.experienceLevel.maxYears != null
+                      ? `${job.experienceLevel.label} (${job.experienceLevel.minYears} - ${job.experienceLevel.maxYears} Years)`
+                      : job.experienceLevel.label}
+                  </span>
                 </li>
               )}
               {job.educationLevel && (

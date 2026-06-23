@@ -117,10 +117,16 @@ const Jobs = () => {
   );
 
   const formatSalary = (job) => {
-    if (job.salaryMin && job.salaryMax)
-      return `${job.currency || ""} ${job.salaryMin} - ${job.salaryMax}`;
-    if (job.salaryMin) return `${job.currency || ""} ${job.salaryMin}+`;
-    if (job.salaryMax) return `Up to ${job.currency || ""} ${job.salaryMax}`;
+    const currency = job.currency || "INR";
+    const toLakhs = (val) => {
+      if (!val) return null;
+      return val <= 1000 ? Number(val).toFixed(1) : (val / 100000).toFixed(1);
+    };
+    const min = toLakhs(job.salaryMin);
+    const max = toLakhs(job.salaryMax);
+    if (min && max) return `${currency} ${min} - ${max} LPA`;
+    if (min) return `${currency} ${min}+ LPA`;
+    if (max) return `Up to ${currency} ${max} LPA`;
     return "Negotiable";
   };
 

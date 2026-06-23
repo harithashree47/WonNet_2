@@ -343,6 +343,20 @@ export const JobsPage = () => {
     }));
   };
 
+  const toLakhs = (val) => {
+    if (!val) return null;
+    return val <= 1000 ? Number(val).toFixed(1) : (val / 100000).toFixed(1);
+  };
+  const formatSalary = (job) => {
+    const currency = job.currency || 'INR';
+    const min = toLakhs(job.salaryMin);
+    const max = toLakhs(job.salaryMax);
+    if (min && max) return `${currency} ${min} - ${max} LPA`;
+    if (min) return `${currency} ${min}+ LPA`;
+    if (max) return `Up to ${currency} ${max} LPA`;
+    return 'Not specified';
+  };
+
   const jobStats = [
     { label: 'Total Jobs', value: stats.total, icon: 'briefcase', tone: 'primary' },
     { label: 'Published', value: stats.published, icon: 'check-circle', tone: 'success' },
@@ -525,7 +539,7 @@ export const JobsPage = () => {
                 </div>
                 <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 truncate">
                   <Icon name="wallet" size={12} className="flex-shrink-0" /> 
-                  <span className="truncate">{j.salaryMin && j.salaryMax ? `${j.currency === 'USD' ? '$' : '₹'}${j.salaryMin} - ${j.currency === 'USD' ? '$' : '₹'}${j.salaryMax}` : 'Salary not specified'}</span>
+                  <span className="truncate">{formatSalary(j)}</span>
                 </div>
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
                   <Badge tone="info" icon="users">{j._count?.applications || 0} applicants</Badge>
@@ -587,7 +601,7 @@ export const JobsPage = () => {
               <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Job Type</p><p className="font-medium">{selectedJob.jobType?.name}</p></div>
               <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Work Mode</p><p className="font-medium">{selectedJob.workMode?.name}</p></div>
               <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Experience</p><p className="font-medium">{selectedJob.experienceLevel?.label}</p></div>
-              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Salary</p><p className="font-medium">{selectedJob.salaryMin && selectedJob.salaryMax ? `${selectedJob.currency === 'USD' ? '$' : '₹'}${selectedJob.salaryMin} - ${selectedJob.currency === 'USD' ? '$' : '₹'}${selectedJob.salaryMax}` : 'Not specified'}</p></div>
+              <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Salary</p><p className="font-medium">{formatSalary(selectedJob)}</p></div>
               <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500">Vacancies</p><p className="font-medium">{selectedJob.vacancies}</p></div>
             </div>
             <div><p className="text-xs text-slate-500 mb-1">Description</p><p className="text-sm">{selectedJob.description}</p></div>

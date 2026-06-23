@@ -10,14 +10,14 @@ import {
 } from "lucide-react";
 import { getPublishedJobs } from "../api/job";
 import { checkApplication } from "../api/application";
-
-const tabs = ["Featured", "Full Time", "Part Time"];
+import { getActiveJobTypes } from "../api/jobtype";
 
 const JobListing = () => {
   const [activeTab, setActiveTab] = useState("Featured");
   const [liked, setLiked] = useState({});
   const [jobs, setJobs] = useState([]);
   const [appliedJobs, setAppliedJobs] = useState({});
+  const [jobTypes, setJobTypes] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,6 +45,14 @@ const JobListing = () => {
       }
     };
     fetchJobs();
+
+    const fetchJobTypes = async () => {
+      const res = await getActiveJobTypes();
+      if (res.success && res.data) {
+        setJobTypes(res.data);
+      }
+    };
+    fetchJobTypes();
   }, []);
 
   const filtered =
@@ -52,14 +60,22 @@ const JobListing = () => {
       ? jobs
       : jobs.filter((j) => j.jobType?.name === activeTab);
 
+  const tabsToDisplay = ["Featured", ...jobTypes.map((jt) => jt.name)];
+
   const toggleLike = (id) =>
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const formatSalary = (job) => {
-    if (job.salaryMin && job.salaryMax)
-      return `${job.currency || ""} ${job.salaryMin} - ${job.salaryMax}`;
-    if (job.salaryMin) return `${job.currency || ""} ${job.salaryMin}+`;
-    if (job.salaryMax) return `Up to ${job.currency || ""} ${job.salaryMax}`;
+    const currency = job.currency || "INR";
+    const toLakhs = (val) => {
+      if (!val) return null;
+      return val <= 1000 ? Number(val).toFixed(1) : (val / 100000).toFixed(1);
+    };
+    const min = toLakhs(job.salaryMin);
+    const max = toLakhs(job.salaryMax);
+    if (min && max) return `${currency} ${min} - ${max} LPA`;
+    if (min) return `${currency} ${min}+ LPA`;
+    if (max) return `Up to ${currency} ${max} LPA`;
     return "Negotiable";
   };
 
@@ -93,7 +109,7 @@ const JobListing = () => {
           data-aos="fade-up"
           data-aos-delay="100"
         >
-          {tabs.map((tab) => (
+          {tabsToDisplay.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
