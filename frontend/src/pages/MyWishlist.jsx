@@ -15,10 +15,14 @@ import {
   ChevronRight,
   ArrowLeft,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import Breadcrumb from "../components/Breadcrumb";
 import { getMyWishlist, removeFromWishlist } from "../api/wishlist";
 
 const ITEMS_PER_PAGE = 9;
+
+// ✅ LocalStorage key for wishlist heart states
+const WISHLIST_HEARTS_KEY = "wishlist_hearts";
 
 function formatSalary(job) {
   const currency = job.currency || "INR";
@@ -54,6 +58,12 @@ export default function MyWishlist() {
   const [removing, setRemoving] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // ✅ Track heart fill states (all wishlist items start filled = true)
+  const [heartStates, setHeartStates] = useState(() => {
+    const saved = localStorage.getItem(WISHLIST_HEARTS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  });
 
   useEffect(() => {
     fetchWishlist();
@@ -84,16 +94,45 @@ export default function MyWishlist() {
     try {
       const result = await removeFromWishlist(jobId);
       if (result.success) {
+        // ✅ Update heart state to unfilled
+        const newHearts = { ...heartStates };
+        delete newHearts[jobId];
+        setHeartStates(newHearts);
+        localStorage.setItem(WISHLIST_HEARTS_KEY, JSON.stringify(newHearts));
+        
         setWishlist(prev => prev.filter(item => item.id !== jobId));
+        toast.success("Removed from wishlist");
       } else {
         setWishlist(prev => prev.filter(item => item.id !== jobId));
+        toast.success("Removed from wishlist");
       }
     } catch (error) {
       setWishlist(prev => prev.filter(item => item.id !== jobId));
+      toast.error("Failed to remove from wishlist");
     } finally {
       setRemoving(null);
     }
   };
+
+  // ✅ Initialize all wishlist items as filled hearts
+  useEffect(() => {
+    if (wishlist.length > 0) {
+      setHeartStates(prev => {
+        const newHearts = { ...prev };
+        let changed = false;
+        wishlist.forEach(job => {
+          if (!(job.id in newHearts)) {
+            newHearts[job.id] = true;
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem(WISHLIST_HEARTS_KEY, JSON.stringify(newHearts));
+        }
+        return changed ? newHearts : prev;
+      });
+    }
+  }, [wishlist]);
 
   const filteredWishlist = wishlist.filter((item) => {
     if (!searchTerm) return true;
@@ -255,7 +294,11 @@ export default function MyWishlist() {
                         <span className="text-xs text-gray-400">
                           Saved recently
                         </span>
-                        <ChevronRight size={16} className="text-gray-400 group-hover:text-accent transition-colors" />
+                        <Heart 
+                          size={18} 
+                          className="text-red-500" 
+                          fill="currentColor" 
+                        />
                       </div>
                     </Link>
 

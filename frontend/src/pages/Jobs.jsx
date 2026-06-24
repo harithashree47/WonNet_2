@@ -15,6 +15,7 @@ import { getJobs, searchJobs } from "../api/job";
 import { getActiveCategories } from "../api/category";
 import { getLocations } from "../api/location";
 import { checkApplication } from "../api/application";
+import { getMyWishlist, addToWishlist, removeFromWishlist } from "../api/wishlist";
 
 const JOBS_PER_PAGE = 3;
 
@@ -62,6 +63,16 @@ const Jobs = () => {
           })
         );
         setAppliedJobs(appliedMap);
+
+        // Fetch wishlist to restore liked state after refresh
+        const wishlistRes = await getMyWishlist(1, 1000);
+        if (wishlistRes.success && wishlistRes.data?.data) {
+          const likedMap = {};
+          wishlistRes.data.data.forEach((item) => {
+            likedMap[item.jobId] = true;
+          });
+          setLiked(likedMap);
+        }
       }
     };
     fetchInitialData();
@@ -107,8 +118,25 @@ const Jobs = () => {
     setCurrentPage(1);
   };
 
-  const toggleLike = (id) =>
-    setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleLike = async (id) => {
+    const isCurrentlyLiked = liked[id];
+
+    // Optimistic update
+    setLiked((prev) => ({ ...prev, [id]: !isCurrentlyLiked }));
+
+    // Call API
+    const res = isCurrentlyLiked
+      ? await removeFromWishlist(id)
+      : await addToWishlist(id);
+
+    // Revert on failure
+    if (!res.success) {
+      setLiked((prev) => ({ ...prev, [id]: isCurrentlyLiked }));
+    } else {
+      // Notify Header to update the wishlist count badge
+      window.dispatchEvent(new Event('wishlist-updated'));
+    }
+  };
 
   const totalPages = Math.ceil(filtered.length / JOBS_PER_PAGE);
   const paginated = filtered.slice(

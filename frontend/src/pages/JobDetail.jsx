@@ -91,7 +91,7 @@ const JobDetail = () => {
       const token = localStorage.getItem('access_token');
       if (!token) return;
       const res = await isWishlisted(Number(id));
-      if (res.success) setIsWishlistedJob(res.data.isWishlisted);
+      if (res.success) setIsWishlistedJob(res.data.wishlisted);
     };
     checkWishlistStatus();
   }, [id]);
@@ -105,12 +105,20 @@ const JobDetail = () => {
     setWishlistLoading(true);
     if (isWishlistedJob) {
       const res = await removeFromWishlist(Number(id));
-      if (res.success) setIsWishlistedJob(false);
-      else alert("Failed to remove from wishlist");
+      if (res.success) {
+        setIsWishlistedJob(false);
+        window.dispatchEvent(new Event('wishlist-updated'));
+      } else {
+        alert("Failed to remove from wishlist");
+      }
     } else {
       const res = await addToWishlist(Number(id));
-      if (res.success) setIsWishlistedJob(true);
-      else alert("Failed to add to wishlist");
+      if (res.success) {
+        setIsWishlistedJob(true);
+        window.dispatchEvent(new Event('wishlist-updated'));
+      } else {
+        alert("Failed to add to wishlist");
+      }
     }
     setWishlistLoading(false);
   };

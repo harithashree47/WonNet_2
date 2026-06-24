@@ -8,10 +8,11 @@ import {
   Heart,
   CheckCircle,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import { getPublishedJobs } from "../api/job";
 import { checkApplication } from "../api/application";
 import { getActiveJobTypes } from "../api/jobtype";
-import { addToWishlist, removeFromWishlist, isWishlisted } from "../api/wishlist";
+import { addToWishlist, removeFromWishlist, getMyWishlist } from "../api/wishlist";
 
 const JobListing = () => {
   const [activeTab, setActiveTab] = useState("Featured");
@@ -62,19 +63,15 @@ const JobListing = () => {
       const token = localStorage.getItem('access_token');
       if (!token || jobs.length === 0) return;
       
-      const checkPromises = jobs.map(async (job) => {
-        const res = await isWishlisted(job.id);
-        if (res.success) {
-          return { jobId: job.id, isWishlisted: res.data.isWishlisted };
-        }
-        return { jobId: job.id, isWishlisted: false };
-      });
-      const results = await Promise.all(checkPromises);
-      const wishlistMap = {};
-      results.forEach(({ jobId, isWishlisted }) => {
-        wishlistMap[jobId] = isWishlisted;
-      });
-      setLiked(wishlistMap);
+      // Use single API call instead of per-job requests
+      const res = await getMyWishlist(1, 1000);
+      if (res.success && res.data?.data) {
+        const wishlistMap = {};
+        res.data.data.forEach((item) => {
+          wishlistMap[item.jobId] = true;
+        });
+        setLiked(wishlistMap);
+      }
     };
 
     checkWishlistStatus();
@@ -90,7 +87,7 @@ const JobListing = () => {
   const toggleLike = async (id) => {
     const token = localStorage.getItem('access_token');
     if (!token) {
-      alert("Please login to save jobs to wishlist");
+      toast.error("Please login to save jobs to wishlist");
       return;
     }
 
@@ -100,15 +97,19 @@ const JobListing = () => {
         const res = await removeFromWishlist(id);
         if (res.success) {
           setLiked(prev => ({ ...prev, [id]: false }));
+          window.dispatchEvent(new Event('wishlist-updated'));
+          toast.success("Removed from wishlist");
         }
       } else {
         const res = await addToWishlist(id);
         if (res.success) {
           setLiked(prev => ({ ...prev, [id]: true }));
+          window.dispatchEvent(new Event('wishlist-updated'));
+          toast.success("Added to wishlist!");
         }
       }
     } catch (error) {
-      alert("Failed to update wishlist");
+      toast.error("Failed to update wishlist");
     } finally {
       setWishlistLoading(prev => ({ ...prev, [id]: false }));
     }
@@ -174,7 +175,7 @@ const JobListing = () => {
               )}
             </button>
           ))}
-        </div>
+         </div>
 
         {/* Job cards */}
         <div className="flex flex-col gap-4">

@@ -15,6 +15,21 @@ const Header = () => {
   // ✅ Check token
   const token = localStorage.getItem("access_token");
 
+  // Listen for wishlist updates from other components
+  useEffect(() => {
+    const handleWishlistUpdate = () => {
+      if (!token) return;
+      getMyWishlist().then((wishlistResult) => {
+        if (wishlistResult.success) {
+          setWishlistCount(wishlistResult.data.data?.length || 0);
+        }
+      }).catch(() => {});
+    };
+
+    window.addEventListener('wishlist-updated', handleWishlistUpdate);
+    return () => window.removeEventListener('wishlist-updated', handleWishlistUpdate);
+  }, [token]);
+
   useEffect(() => {
     const fetchData = async () => {
       if (!token) return;
@@ -37,7 +52,7 @@ const Header = () => {
       }
     };
     fetchData();
-  }, [token]);
+  }, [token, pathname]);
 
   // ✅ Logout function
   const handleLogout = () => {
