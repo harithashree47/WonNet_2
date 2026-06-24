@@ -21,6 +21,7 @@ import ApplyPage from "./pages/ApplyPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MyApplications from "./pages/MyApplications";
+import MyWishlist from "./pages/MyWishlist";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
@@ -102,6 +103,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <MyApplications />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/my-wishlist"
+            element={
+              <ProtectedRoute>
+                <MyWishlist />
               </ProtectedRoute>
             }
           />

@@ -17,8 +17,9 @@ import { BenefitModule } from './benefit/benefit.module';
 import { JobModule } from './job/job.module';
 import { ApplicationModule } from './application/application.module';
 import { HrModule } from './hr/hr.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule, JobModule, ApplicationModule, HrModule],
+  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule, JobModule, ApplicationModule, HrModule, WishlistModule],
   controllers: [AppController],
   providers: [AppService],
 })

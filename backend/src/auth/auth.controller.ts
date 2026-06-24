@@ -7,6 +7,7 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -79,6 +80,14 @@ export class AuthController {
   @Roles('SUPER_ADMIN', 'ADMIN')
   getAllUsers() {
     return this.authService.getAllUsers();
+  }
+
+  // ✅ GET USER PROFILE
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  getProfile(@Req() req) {
+    const userId = req.user.sub;
+    return this.authService.getUserProfile(userId);
   }
 
   // ✅ UPDATE USER STATUS

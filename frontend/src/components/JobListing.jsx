@@ -11,6 +11,7 @@ import {
 import { getPublishedJobs } from "../api/job";
 import { checkApplication } from "../api/application";
 import { getActiveJobTypes } from "../api/jobtype";
+import { addToWishlist, removeFromWishlist, isWishlisted } from "../api/wishlist";
 
 const JobListing = () => {
   const [activeTab, setActiveTab] = useState("Featured");
@@ -18,6 +19,7 @@ const JobListing = () => {
   const [jobs, setJobs] = useState([]);
   const [appliedJobs, setAppliedJobs] = useState({});
   const [jobTypes, setJobTypes] = useState([]);
+  const [wishlistLoading, setWishlistLoading] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,6 +57,29 @@ const JobListing = () => {
     fetchJobTypes();
   }, []);
 
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token || jobs.length === 0) return;
+      
+      const checkPromises = jobs.map(async (job) => {
+        const res = await isWishlisted(job.id);
+        if (res.success) {
+          return { jobId: job.id, isWishlisted: res.data.isWishlisted };
+        }
+        return { jobId: job.id, isWishlisted: false };
+      });
+      const results = await Promise.all(checkPromises);
+      const wishlistMap = {};
+      results.forEach(({ jobId, isWishlisted }) => {
+        wishlistMap[jobId] = isWishlisted;
+      });
+      setLiked(wishlistMap);
+    };
+
+    checkWishlistStatus();
+  }, [jobs]);
+
   const filtered =
     activeTab === "Featured"
       ? jobs
@@ -62,8 +87,32 @@ const JobListing = () => {
 
   const tabsToDisplay = ["Featured", ...jobTypes.map((jt) => jt.name)];
 
-  const toggleLike = (id) =>
-    setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleLike = async (id) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      alert("Please login to save jobs to wishlist");
+      return;
+    }
+
+    setWishlistLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      if (liked[id]) {
+        const res = await removeFromWishlist(id);
+        if (res.success) {
+          setLiked(prev => ({ ...prev, [id]: false }));
+        }
+      } else {
+        const res = await addToWishlist(id);
+        if (res.success) {
+          setLiked(prev => ({ ...prev, [id]: true }));
+        }
+      }
+    } catch (error) {
+      alert("Failed to update wishlist");
+    } finally {
+      setWishlistLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
 
   const formatSalary = (job) => {
     const currency = job.currency || "INR";
@@ -181,13 +230,19 @@ const JobListing = () => {
                   {/* Like */}
                   <button
                     onClick={() => toggleLike(job.id)}
-                    className="text-gray-400 hover:text-red-500 transition"
+                    disabled={wishlistLoading[job.id]}
+                    className="text-gray-400 hover:text-red-500 transition disabled:opacity-50 disabled:cursor-not-allowed relative"
                   >
                     <Heart
                       size={20}
                       fill={liked[job.id] ? "#ef4444" : "none"}
                       className={liked[job.id] ? "text-red-500" : ""}
                     />
+                    {wishlistLoading[job.id] && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></span>
+                      </span>
+                    )}
                   </button>
 
                   {/* View More */}

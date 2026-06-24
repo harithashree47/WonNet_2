@@ -223,6 +223,22 @@ export class AuthService {
     });
   }
 
+  // ✅ GET USER PROFILE
+  async getUserProfile(userId: number) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mobile: true,
+        role: true,
+        designation: true,
+        status: true,
+      },
+    });
+  }
+
   // ✅ ADMIN/SUPER ADMIN/HR LOGIN (SINGLE ENDPOINT FOR ALL STAFF)
   async adminLogin(email: string, password: string) {
     const user = await this.prisma.user.findUnique({

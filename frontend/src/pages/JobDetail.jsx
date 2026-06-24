@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { getJobById } from "../api/job";
 import { applyForJob, checkApplication } from "../api/application";
+import { addToWishlist, removeFromWishlist, isWishlisted } from "../api/wishlist";
 
 const benefitIconMap = {
   heart: Heart,
@@ -64,6 +65,8 @@ const JobDetail = () => {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasApplied, setHasApplied] = useState(false);
+  const [isWishlistedJob, setIsWishlistedJob] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -82,6 +85,35 @@ const JobDetail = () => {
     };
     checkIfApplied();
   }, [id]);
+
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const res = await isWishlisted(Number(id));
+      if (res.success) setIsWishlistedJob(res.data.isWishlisted);
+    };
+    checkWishlistStatus();
+  }, [id]);
+
+  const handleWishlistToggle = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      alert("Please login to add jobs to wishlist");
+      return;
+    }
+    setWishlistLoading(true);
+    if (isWishlistedJob) {
+      const res = await removeFromWishlist(Number(id));
+      if (res.success) setIsWishlistedJob(false);
+      else alert("Failed to remove from wishlist");
+    } else {
+      const res = await addToWishlist(Number(id));
+      if (res.success) setIsWishlistedJob(true);
+      else alert("Failed to add to wishlist");
+    }
+    setWishlistLoading(false);
+  };
 
   const handleApplySubmit = async (formData) => {
     try {
@@ -418,6 +450,18 @@ const JobDetail = () => {
                 Apply Now
               </Link>
             )}
+            <button
+              onClick={handleWishlistToggle}
+              disabled={wishlistLoading}
+              className={`w-full mt-3 font-semibold py-3 rounded-md transition text-sm flex items-center justify-center gap-2 ${
+                isWishlistedJob
+                  ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                  : "border border-primary text-primary hover:bg-primary hover:text-white"
+              }`}
+            >
+              <Heart size={16} fill={isWishlistedJob ? "currentColor" : "none"} />
+              {wishlistLoading ? "Processing..." : isWishlistedJob ? "Remove from Wishlist" : "Add to Wishlist"}
+            </button>
             <button
               onClick={() => navigate(-1)}
               className="w-full mt-3 border border-primary text-primary font-semibold py-3 rounded-md hover:bg-primary hover:text-white transition text-sm"

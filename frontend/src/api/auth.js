@@ -45,3 +45,31 @@ export const loginUser = async (loginData) => {
     throw error;
   }
 };
+
+// ✅ Fetch user profile dynamically
+export const getUserProfile = async () => {
+  try {
+    const token = localStorage.getItem("access_token");
+    if (!token) return null;
+
+    const response = await fetch(`${BASE_URL}/auth/profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to fetch user profile");
+    }
+
+    // Return user data directly (backend returns user object)
+    return data;
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    return null;
+  }
+};

@@ -23,6 +23,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   applications Application[]
+  wishlists Wishlist[]
 }
 
 model Category {
@@ -204,6 +205,7 @@ model Job {
   benefits        JobBenefit[]
 
   applications    Application[]
+  wishlists       Wishlist[]
 
   @@index([companyId])
   @@index([categoryId])
@@ -253,6 +255,21 @@ model Application {
   user      User @relation(fields: [userId], references: [id])
 
   @@unique([jobId, userId])
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  jobId     Int
+
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id])
+  job       Job  @relation(fields: [jobId], references: [id])
+
+  @@unique([userId, jobId])
+  @@index([userId])
+  @@index([jobId])
 }
 
 enum Role {

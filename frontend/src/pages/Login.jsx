@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Globe2 } from "lucide-react";
-import { toast } from "react-toastify"; // 👈 ADD THIS
+import { toast } from "react-toastify"; // 👈 ADD THI
 import InputField from "../components/common/InputField";
 import Button from "../components/common/Button";
 import { loginUser } from "../api/auth";
@@ -46,7 +46,7 @@ const Login = () => {
 
       console.log("Login Success:", res);
 
-      // Save JWT token
+      // Save JWT token only
       localStorage.setItem("access_token", res.access_token);
       
       // 👈 Show success toast
