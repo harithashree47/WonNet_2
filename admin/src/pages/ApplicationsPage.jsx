@@ -27,6 +27,7 @@ export const ApplicationsPage = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState('');
 
   useEffect(() => {
@@ -82,8 +83,10 @@ export const ApplicationsPage = () => {
   };
 
   const handleStatusUpdate = async () => {
-    if (!selectedApp || !newStatus) return;
+    if (!selectedApp || !newStatus || updating) return;
+    setUpdating(true);
     const result = await updateApplicationStatus(selectedApp.id, newStatus);
+    setUpdating(false);
     if (result.success) {
       fetchApplications();
       fetchStats();
@@ -438,8 +441,8 @@ export const ApplicationsPage = () => {
         footer={
           <>
             <Button variant="ghost" onClick={() => setEditModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleStatusUpdate} disabled={!newStatus || newStatus === selectedApp?.status}>
-              Update Status
+            <Button onClick={handleStatusUpdate} disabled={!newStatus || newStatus === selectedApp?.status || updating}>
+              {updating ? 'Updating...' : 'Update Status'}
             </Button>
           </>
         }

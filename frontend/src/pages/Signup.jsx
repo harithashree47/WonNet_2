@@ -27,6 +27,7 @@ const Signup = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const validate = () => {
     const err = {};
@@ -69,6 +70,8 @@ const Signup = () => {
     };
 
     try {
+      setSubmitting(true);
+
       const res = await registerUser(userData);
       console.log("Signup Success:", res);
       
@@ -90,6 +93,8 @@ const Signup = () => {
       setErrors({
         api: errorMessage,
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -191,8 +196,8 @@ const Signup = () => {
               )}
             </div>
 
-            <Button type="submit" size="full">
-              Create Account
+            <Button type="submit" size="full" loading={submitting} disabled={submitting}>
+              {submitting ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 

@@ -50,7 +50,11 @@ export class ApplicationController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get company\'s application statistics' })
   getCompanyStats(@Req() req) {
-    return this.applicationService.getCompanyApplicationStats(req.user.companyId);
+    const companyId = req.user.companyId;
+    if (!companyId) {
+      return { total: 0, statuses: {}, byJob: [] };
+    }
+    return this.applicationService.getCompanyApplicationStats(companyId);
   }
 
   @Get()
@@ -59,7 +63,8 @@ export class ApplicationController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all applications (Admin/HR only)' })
   findAll(@Query() query: QueryApplicationDto, @Req() req) {
-    return this.applicationService.getAllApplications(req.user.companyId, req.user.role, query);
+    const companyId = req.user.companyId || null;
+    return this.applicationService.getAllApplications(companyId, req.user.role, query);
   }
 
   @Get('job/:jobId')

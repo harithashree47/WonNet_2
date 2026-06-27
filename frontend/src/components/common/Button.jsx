@@ -1,3 +1,5 @@
+import { Loader2 } from "lucide-react";
+
 const variants = {
   primary: "bg-accent text-primary hover:bg-yellow-300",
   outline:
@@ -19,6 +21,7 @@ const Button = ({
   variant = "primary",
   size = "md",
   disabled = false,
+  loading = false,
   onClick,
   className = "",
   icon: Icon,
@@ -27,17 +30,21 @@ const Button = ({
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || loading}
       className={`
         inline-flex items-center justify-center gap-2
         rounded-md font-semibold transition
         ${variants[variant]}
         ${sizes[size]}
-        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+        ${disabled || loading ? "opacity-50 cursor-not-allowed" : ""}
         ${className}
       `}
     >
-      {Icon && <Icon size={16} />}
+      {loading ? (
+        <Loader2 size={16} className="animate-spin" />
+      ) : Icon ? (
+        <Icon size={16} />
+      ) : null}
       {children}
     </button>
   );

@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
@@ -7,7 +8,10 @@ import { BulkUpdateApplicationDto } from './dto/bulk-update-application.dto';
 
 @Injectable()
 export class ApplicationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(data: CreateApplicationDto) {
     // Check if job exists and is active
@@ -42,7 +46,7 @@ export class ApplicationService {
     }
 
     try {
-      return await this.prisma.application.create({
+      const application = await this.prisma.application.create({
         data: {
           job: { connect: { id: data.jobId } },
           user: { connect: { id: data.userId } },
@@ -74,6 +78,8 @@ export class ApplicationService {
           }
         }
       });
+
+      return application;
     } catch (error) {
       if (error.code === 'P2002') {
         throw new BadRequestException('You have already applied for this job');
@@ -190,7 +196,7 @@ export class ApplicationService {
     const where: any = { id };
 
     // If user is not admin, only allow access to their own applications
-    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'HR') {
       where.userId = userId;
     }
 
@@ -237,83 +243,91 @@ export class ApplicationService {
     return application;
   }
 
-
   async update(id: number, data: UpdateApplicationDto, userId: number, userRole: string) {
-  // Check if application exists
-  const application = await this.prisma.application.findFirst({
-    where: { id },
-    include: { job: true }
-  });
+    // Check if application exists
+    const application = await this.prisma.application.findFirst({
+      where: { id },
+      include: { job: true }
+    });
 
-  if (!application) {
-    throw new NotFoundException('Application not found');
-  }
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
 
-  // If user is not admin, only allow updating their own applications
-  if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
-    if (application.userId !== userId) {
-      throw new ForbiddenException('You can only update your own applications');
+    // If user is not admin, only allow updating their own applications
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'HR') {
+      if (application.userId !== userId) {
+        throw new ForbiddenException('You can only update your own applications');
+      }
+    }
+
+    // Don't allow updating if application is already offered or rejected
+    if (application.status === 'offered') {
+      throw new BadRequestException('Cannot update an application with an offer');
+    }
+
+    if (application.status === 'rejected') {
+      throw new BadRequestException('Cannot update a rejected application');
+    }
+
+    // Remove jobId and userId from update data if present (they shouldn't be updated)
+    const { jobId, userId: _, ...updateData } = data;
+
+    try {
+      return await this.prisma.application.update({
+        where: { id },
+        data: {
+          resumeUrl: updateData.resumeUrl,
+          linkedin: updateData.linkedin,
+          portfolio: updateData.portfolio,
+          motivation: updateData.motivation,
+          expectedSalary: updateData.expectedSalary,
+          noticePeriod: updateData.noticePeriod,
+          status: updateData.status,
+        },
+        include: {
+          job: {
+            include: {
+              company: true,
+              location: true,
+              jobType: true,
+              workMode: true,
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              mobile: true,
+              designation: true,
+            }
+          }
+        }
+      });
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Application already exists');
+      }
+      throw new BadRequestException('Failed to update application');
     }
   }
 
-  // Don't allow updating if application is already offered or rejected
-  if (application.status === 'offered') {
-    throw new BadRequestException('Cannot update an application with an offer');
-  }
-
-  if (application.status === 'rejected') {
-    throw new BadRequestException('Cannot update a rejected application');
-  }
-
-  // Remove jobId and userId from update data if present (they shouldn't be updated)
-  const { jobId, userId: _, ...updateData } = data;
-
-  try {
-    return await this.prisma.application.update({
+  /**
+   * Update application status with email notifications
+   * Only sends emails for: shortlisted, interview, offered
+   */
+  async updateStatus(id: number, status: string, companyId: number, userRole: string, hrCompanyId?: number) {
+    // Get application with job details and user info
+    const application = await this.prisma.application.findFirst({
       where: { id },
-      data: {
-        resumeUrl: updateData.resumeUrl,
-        linkedin: updateData.linkedin,
-        portfolio: updateData.portfolio,
-        motivation: updateData.motivation,
-        expectedSalary: updateData.expectedSalary,
-        noticePeriod: updateData.noticePeriod,
-        status: updateData.status,
-      },
       include: {
         job: {
           include: {
             company: true,
-            location: true,
-            jobType: true,
-            workMode: true,
           }
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            mobile: true,
-            designation: true,
-          }
-        }
-      }
-    });
-  } catch (error) {
-    if (error.code === 'P2002') {
-      throw new BadRequestException('Application already exists');
-    }
-    throw new BadRequestException('Failed to update application');
-  }
-}
-
-  async updateStatus(id: number, status: string, companyId: number, userRole: string, hrCompanyId?: number) {
-    // Get application with job details
-    const application = await this.prisma.application.findFirst({
-      where: { id },
-      include: {
-        job: true
+        user: true,
       }
     });
 
@@ -339,7 +353,7 @@ export class ApplicationService {
     }
 
     try {
-      return await this.prisma.application.update({
+      const updatedApplication = await this.prisma.application.update({
         where: { id },
         data: { status },
         include: {
@@ -358,8 +372,75 @@ export class ApplicationService {
           }
         }
       });
+
+      // Send email notifications only for shortlisted, interview, offered
+      await this.sendStatusEmail(updatedApplication, status);
+
+      return updatedApplication;
     } catch (error) {
       throw new BadRequestException('Failed to update application status');
+    }
+  }
+
+  /**
+   * Send appropriate email based on status — only shortlisted, interview, offered
+   */
+  private async sendStatusEmail(application: any, status: string) {
+    const { user, job } = application;
+    const companyName = job.company.name;
+
+    // Skip if user email is not available
+    if (!user || !user.email) {
+      console.warn('User email not available, skipping email notification');
+      return;
+    }
+
+    try {
+      switch (status) {
+        case 'shortlisted':
+          await this.emailService.sendShortlistedEmail(
+            user.email,
+            user.name,
+            job.title,
+            companyName
+          );
+          break;
+
+        case 'interview':
+          await this.emailService.sendInterviewEmail(
+            user.email,
+            user.name,
+            job.title,
+            companyName,
+            {
+              date: 'To be confirmed',
+              time: 'To be confirmed',
+              mode: 'To be confirmed',
+              linkOrAddress: 'Will be shared shortly'
+            }
+          );
+          break;
+
+        case 'offered':
+          await this.emailService.sendSelectedEmail(
+            user.email,
+            user.name,
+            job.title,
+            companyName,
+            {
+              salary: 'To be discussed',
+              joiningDate: 'To be confirmed'
+            }
+          );
+          break;
+
+        default:
+          // No email for other statuses (applied, reviewing, rejected, withdrawn)
+          break;
+      }
+    } catch (emailError) {
+      console.error('Failed to send status email:', emailError);
+      // Don't throw error - email failure shouldn't break the application
     }
   }
 
@@ -368,6 +449,14 @@ export class ApplicationService {
       where: {
         id,
         userId
+      },
+      include: {
+        job: {
+          include: {
+            company: true
+          }
+        },
+        user: true
       }
     });
 
@@ -384,10 +473,12 @@ export class ApplicationService {
     }
 
     try {
-      return await this.prisma.application.update({
+      const updatedApplication = await this.prisma.application.update({
         where: { id },
         data: { status: 'withdrawn' }
       });
+
+      return updatedApplication;
     } catch (error) {
       throw new BadRequestException('Failed to withdraw application');
     }
@@ -500,24 +591,26 @@ export class ApplicationService {
       throw new BadRequestException('Invalid status');
     }
 
-    // Check permissions
-    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
-      // Check if company owns all applications
-      const applications = await this.prisma.application.findMany({
-        where: {
-          id: { in: ids },
-          job: {
-            companyId
+    // Check permissions and get applications with user details
+    const applications = await this.prisma.application.findMany({
+      where: {
+        id: { in: ids },
+        job: {
+          companyId
+        }
+      },
+      include: {
+        job: {
+          include: {
+            company: true
           }
         },
-        include: {
-          job: true
-        }
-      });
-
-      if (applications.length !== ids.length) {
-        throw new ForbiddenException('You do not have permission to update some applications');
+        user: true,
       }
+    });
+
+    if (applications.length !== ids.length) {
+      throw new ForbiddenException('You do not have permission to update some applications');
     }
 
     try {
@@ -527,6 +620,14 @@ export class ApplicationService {
         },
         data: { status }
       });
+
+      // Send email notifications for important status changes
+      const notifyStatuses = ['shortlisted', 'interview', 'offered'];
+      if (notifyStatuses.includes(status)) {
+        for (const app of applications) {
+          await this.sendStatusEmail(app, status);
+        }
+      }
 
       return {
         count: result.count,

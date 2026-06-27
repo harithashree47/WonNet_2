@@ -8,12 +8,14 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UpdateUserDto } from 'src/user/dto/update-user.dto';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   // ✅ USER REGISTER ONLY
@@ -31,6 +33,15 @@ export class AuthService {
           role: 'USER',
         },
       });
+
+      // Send welcome email
+      try {
+        if (user.email) {
+          await this.emailService.sendWelcomeEmail(user.email, user.name);
+        }
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
 
       return {
         message: 'User registered successfully',

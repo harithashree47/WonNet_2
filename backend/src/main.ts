@@ -13,6 +13,11 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
+  // ✅ Serve static files from assets directory (favicon, logos, etc.)
+  app.useStaticAssets(join(process.cwd(), 'assets'), {
+    prefix: '/assets/',
+  });
+
   app.enableCors({
     origin: [
       "http://localhost:5173",
@@ -44,5 +49,6 @@ async function bootstrap() {
   await app.listen(3000);
   console.log('Server running on http://localhost:3000');
   console.log('Uploads available at http://localhost:3000/uploads/');
+  console.log('Assets available at http://localhost:3000/assets/');
 }
 bootstrap();
