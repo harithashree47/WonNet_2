@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Globe2 } from "lucide-react";
-import { toast } from "react-toastify"; // 👈 ADD THI
+import { toast } from "react-toastify";
 import InputField from "../components/common/InputField";
 import Button from "../components/common/Button";
 import { loginUser } from "../api/auth";
 
-const Login = () => {
+const Login = ({ onSwitchToSignup, onClose }) => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
@@ -29,7 +29,6 @@ const Login = () => {
     const err = validate();
     if (Object.keys(err).length > 0) {
       setErrors(err);
-      // 👈 Show validation error toasts
       Object.values(err).forEach(errorMsg => {
         toast.error(errorMsg);
       });
@@ -44,131 +43,115 @@ const Login = () => {
         password: form.password,
       });
 
-      console.log("Login Success:", res);
-
-      // Save JWT token only
       localStorage.setItem("access_token", res.access_token);
-      
-      // 👈 Show success toast
       toast.success(" Login successful! Welcome back!");
       
-      // Redirect after toast
+      if (onClose) onClose();
+      window.location.reload();
       setTimeout(() => {
         navigate("/");
       }, 1000);
 
     } catch (error) {
-      console.error(error);
-      
-      // 👈 Show error toast
       const errorMessage = error.response?.data?.message || error.message || "Invalid credentials";
       toast.error(` ${errorMessage}`);
-      
-      setErrors({
-        api: errorMessage,
-      });
+      setErrors({ api: errorMessage });
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-100">
-      <div
-        className="w-full max-w-md bg-white rounded-2xl overflow-hidden
-                   shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_10px_40px_-4px_rgba(0,0,0,0.12)]
-                   border border-gray-100"
-        data-aos="fade-up"
-      >
-        <div className="h-1.5 w-full bg-accent" />
-
-        <div className="px-8 py-10">
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-accent border-2 border-accent/60">
-              <Globe2 size={24} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-primary">
-                Won<span className="text-accent">Net!</span>
-              </h1>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Sign in to your account
-              </p>
-            </div>
+  const cardContent = (
+    <div className="px-6 pt-8 pb-6">
+      {/* Premium Logo Section */}
+      <div className="flex items-center justify-center gap-4 mb-10">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent to-yellow-300 rounded-full blur-lg opacity-40 animate-pulse" />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-slate-800 text-accent shadow-2xl ring-4 ring-accent/20">
+            <Globe2 size={32} strokeWidth={1.5} />
           </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <InputField
-              label="Email Address"
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
-              error={errors.email}
-              icon={Mail}
-              required
-            />
-
-            <InputField
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
-              value={form.password}
-              onChange={(e) =>
-                setForm({ ...form, password: e.target.value })
-              }
-              error={errors.password}
-              icon={Lock}
-              required
-              rightElement={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="text-gray-400 hover:text-primary transition"
-                >
-                  {showPassword ? (
-                    <EyeOff size={16} />
-                  ) : (
-                    <Eye size={16} />
-                  )}
-                </button>
-              }
-            />
-
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="accent-yellow-400 w-4 h-4"
-                />
-                Remember me
-              </label>
-              <Link
-                to="/forgot-password"
-                className="text-accent font-medium hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            <Button type="submit" size="full">
-              Sign In
-            </Button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Don't have an account?{" "}
-            <Link
-              to="/signup"
-              className="text-accent font-semibold hover:underline"
-            >
-              Sign Up
-            </Link>
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-slate-700 to-primary bg-clip-text text-transparent">
+            Won<span className="text-accent">Net!</span>
+          </h1>
+          <p className="text-sm text-gray-500 mt-1 font-semibold tracking-wide">
+            Welcome back
           </p>
         </div>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <InputField
+          label="Email Address"
+          type="email"
+          placeholder="you@example.com"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          error={errors.email}
+          icon={Mail}
+          required
+        />
+
+        <InputField
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          placeholder="••••••••"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          error={errors.password}
+          icon={Lock}
+          required
+          rightElement={
+            <button
+              type="button"
+              onClick={() => setShowPassword((p) => !p)}
+              className="text-gray-400 hover:text-accent transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          }
+        />
+
+        {/* Remember + Forgot */}
+        <div className="flex items-center justify-between text-sm">
+          <label className="flex items-center gap-2.5 text-gray-600 cursor-pointer group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-2 border-gray-300 text-accent focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              />
+            </div>
+            <span className="text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
+          </label>
+          <Link to="/forgot-password" className="text-accent font-bold hover:underline decoration-2 underline-offset-4">
+            Forgot password?
+          </Link>
+        </div>
+
+        <div className="pt-2">
+          <Button type="submit" size="full">Sign In</Button>
+        </div>
+      </form>
+
+      <div className="mt-8 pt-6 border-t border-gray-100">
+        <p className="text-center text-sm text-gray-500">
+          Don't have an account?{" "}
+          <button type="button" onClick={onSwitchToSignup} className="text-accent font-bold hover:underline decoration-2 underline-offset-4">
+            Sign Up
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+
+  if (onClose) {
+    return cardContent;
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-100">
+      <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_10px_40px_-4px_rgba(0,0,0,0.12)] border border-gray-100">
+        {cardContent}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { getCategories, getCategoryById } from "./api/category";
 import { getJobs, getPublishedJobs, getJobById, searchJobs, getJobsByCompany, getJobsByCategory, getJobsByLocation } from "./api/job";
@@ -20,11 +21,16 @@ import Jobs from "./pages/Jobs";
 import ApplyPage from "./pages/ApplyPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import MyApplications from "./pages/MyApplications";
 import MyWishlist from "./pages/MyWishlist";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import { AuthModal } from "./components/AuthModal";
+import { AuthModalProvider, useAuthModal } from "./contexts/AuthModalContext";
 
 const authRoutes = ["/login", "/signup"];
 
@@ -42,50 +48,48 @@ const Layout = ({ children }) => {
   );
 };
 
-function App() {
+function AppContent() {
+  const { authModalOpen, setAuthModalOpen } = useAuthModal();
+
   return (
     <AOSProvider>
       <Layout>
+        <AuthModal
+          open={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
         <Routes>
           <Route
             path="/"
             element={
-              <ProtectedRoute>
-                <>
-                  <Banner />
-                  <TopHiringCompanies />
-                  <PopularJobCategories />
-                  <JobListing />
-                  <JobStats />
-                </>
-              </ProtectedRoute>
+              <>
+                <Banner />
+                <TopHiringCompanies />
+                <PopularJobCategories />
+                <JobListing />
+                <JobStats />
+              </>
             }
           />
 
           <Route
             path="/jobs"
             element={
-              <ProtectedRoute>
-                <Jobs />
-              </ProtectedRoute>
+              <Jobs />
             }
           />
 
           <Route
             path="/jobs/:id"
             element={
-              <ProtectedRoute>
-                <JobDetail />
-              </ProtectedRoute>
+              <JobDetail />
             }
           />
 
           <Route
             path="/about"
             element={
-              <ProtectedRoute>
-                <AboutUs />
-              </ProtectedRoute>
+              <AboutUs />
             }
           />
 
@@ -133,6 +137,12 @@ function App() {
               </PublicRoute>
             }
           />
+
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+
+          {/* Catch-all 404 route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
         
         {/* 👈 ADD ToastContainer HERE */}
@@ -147,9 +157,18 @@ function App() {
           draggable
           pauseOnHover
           theme="light"
+          className="!z-[10000]"
         />
       </Layout>
     </AOSProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthModalProvider>
+      <AppContent />
+    </AuthModalProvider>
   );
 }
 

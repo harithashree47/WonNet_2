@@ -3,11 +3,13 @@ import { Menu, X, Globe2, Heart } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { getMyWishlist } from "../api/wishlist";
 import { getUserProfile } from "../api/auth";
+import { useAuthModal } from "../contexts/AuthModalContext";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { setAuthModalOpen } = useAuthModal();
   const [wishlistCount, setWishlistCount] = useState(0);
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@example.com");
@@ -153,12 +155,12 @@ const Header = () => {
                 Logout
               </button>
             ) : (
-              <Link
-                to="/login"
+              <button
+                onClick={() => setAuthModalOpen(true)}
                 className="ml-2 inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-semibold text-primary hover:bg-yellow-300 transition"
               >
                 Login
-              </Link>
+              </button>
             )}
           </nav>
 
@@ -270,13 +272,15 @@ const Header = () => {
                     Logout
                   </button>
                 ) : (
-                  <Link
-                    to="/login"
-                    className="block w-full text-center bg-accent text-primary text-sm font-bold px-4 py-3 rounded-xl hover:bg-yellow-300 transition shadow-sm"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Login
-                  </Link>
+                   <button
+                     onClick={() => {
+                       setAuthModalOpen(true);
+                       setIsOpen(false);
+                     }}
+                     className="block w-full text-center bg-accent text-primary text-sm font-bold px-4 py-3 rounded-xl hover:bg-yellow-300 transition shadow-sm"
+                   >
+                     Login
+                   </button>
                 )}
               </div>
             </div>

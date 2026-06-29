@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
   Clock,
@@ -27,9 +27,11 @@ import {
   Smile,
   Zap,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import { getJobById } from "../api/job";
 import { applyForJob, checkApplication } from "../api/application";
 import { addToWishlist, removeFromWishlist, isWishlisted } from "../api/wishlist";
+import { useAuthModal } from "../contexts/AuthModalContext";
 
 const benefitIconMap = {
   heart: Heart,
@@ -62,6 +64,7 @@ const renderBenefitIcon = (iconName) => {
 const JobDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { setAuthModalOpen } = useAuthModal();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasApplied, setHasApplied] = useState(false);
@@ -99,7 +102,8 @@ const JobDetail = () => {
   const handleWishlistToggle = async () => {
     const token = localStorage.getItem('access_token');
     if (!token) {
-      alert("Please login to add jobs to wishlist");
+      toast.error("Please login to add jobs to wishlist");
+      setAuthModalOpen(true);
       return;
     }
     setWishlistLoading(true);
@@ -451,12 +455,20 @@ const JobDetail = () => {
                 Already Applied
               </button>
             ) : (
-              <Link
-                to={`/apply/${id}`}
+              <button
+                onClick={() => {
+                  const token = localStorage.getItem('access_token');
+                  if (!token) {
+                    toast.error("Please login to apply for the job");
+                    setAuthModalOpen(true);
+                  } else {
+                    navigate(`/apply/${id}`);
+                  }
+                }}
                 className="w-full bg-accent text-primary font-semibold py-3 rounded-md hover:bg-yellow-300 transition text-sm text-center block"
               >
                 Apply Now
-              </Link>
+              </button>
             )}
             <button
               onClick={handleWishlistToggle}
