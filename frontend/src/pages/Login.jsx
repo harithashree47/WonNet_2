@@ -60,17 +60,17 @@ const Login = ({ onSwitchToSignup, onClose }) => {
   };
 
   const cardContent = (
-    <div className="px-6 pt-8 pb-6">
+    <div className="px-4 pt-5 pb-4 sm:px-5 sm:pt-6 sm:pb-5">
       {/* Premium Logo Section */}
-      <div className="flex items-center justify-center gap-4 mb-10">
+      <div className="flex items-center justify-center gap-4 mb-6 sm:mb-6">
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-br from-accent to-yellow-300 rounded-full blur-lg opacity-40 animate-pulse" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-slate-800 text-accent shadow-2xl ring-4 ring-accent/20">
-            <Globe2 size={32} strokeWidth={1.5} />
+          <div className="relative flex h-10 w-10 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-slate-800 text-accent shadow-2xl ring-4 ring-accent/20">
+            <Globe2 size={20} strokeWidth={1.5} className="sm:size-5" />
           </div>
         </div>
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-slate-700 to-primary bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-slate-700 to-primary bg-clip-text text-transparent">
             Won<span className="text-accent">Net!</span>
           </h1>
           <p className="text-sm text-gray-500 mt-1 font-semibold tracking-wide">
@@ -80,7 +80,7 @@ const Login = ({ onSwitchToSignup, onClose }) => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4">
         <InputField
           label="Email Address"
           type="email"
@@ -112,28 +112,12 @@ const Login = ({ onSwitchToSignup, onClose }) => {
           }
         />
 
-        {/* Remember + Forgot */}
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2.5 text-gray-600 cursor-pointer group">
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="w-4 h-4 rounded border-2 border-gray-300 text-accent focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
-              />
-            </div>
-            <span className="text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
-          </label>
-          <Link to="/forgot-password" className="text-accent font-bold hover:underline decoration-2 underline-offset-4">
-            Forgot password?
-          </Link>
-        </div>
-
         <div className="pt-2">
           <Button type="submit" size="full">Sign In</Button>
         </div>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-gray-100">
+      <div className="mt-6 sm:mt-6 pt-4 sm:pt-4 border-t border-gray-100">
         <p className="text-center text-sm text-gray-500">
           Don't have an account?{" "}
           <button type="button" onClick={onSwitchToSignup} className="text-accent font-bold hover:underline decoration-2 underline-offset-4">

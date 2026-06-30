@@ -13,7 +13,7 @@ export const AuthModal = ({ open, onClose, initialMode = "login" }) => {
   const switchToLogin = () => setMode("login");
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3">
       {/* Subtle glassmorphism backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
@@ -28,7 +28,7 @@ export const AuthModal = ({ open, onClose, initialMode = "login" }) => {
         {/* Elegant close button */}
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 z-10 w-11 h-11 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gradient-to-br hover:from-red-50 hover:to-red-100 transition-all duration-300 hover:rotate-90 hover:scale-110 group"
+          className="absolute right-1.5 top-1.5 sm:right-5 sm:top-5 z-10 w-7 h-7 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gradient-to-br hover:from-red-50 hover:to-red-100 transition-all duration-300 hover:rotate-90 hover:scale-110 group"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-red-500 transition-colors">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -37,7 +37,7 @@ export const AuthModal = ({ open, onClose, initialMode = "login" }) => {
         </button>
 
         {/* Scrollable content */}
-        <div className="overflow-y-auto px-6 py-6">
+        <div className="overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           {mode === "login" ? (
             <Login onSwitchToSignup={switchToSignup} onClose={onClose} />
           ) : (

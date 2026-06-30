@@ -25,7 +25,7 @@ const InputField = ({
       <div className="relative">
         {/* Left icon */}
         {Icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none flex items-center">
             <Icon size={16} />
           </span>
         )}
@@ -53,7 +53,7 @@ const InputField = ({
 
         {/* Right element (e.g. eye icon) */}
         {rightElement && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
             {rightElement}
           </span>
         )}
