@@ -1,3 +1,4 @@
+import { useAuthModal } from "../contexts/AuthModalContext";
 import Breadcrumb from "../components/Breadcrumb";
 import {
   Target,
@@ -59,6 +60,8 @@ const team = [
 ];
 
 const AboutUs = () => {
+  const { setAuthModalOpen } = useAuthModal();
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Breadcrumb */}
@@ -186,12 +189,12 @@ const AboutUs = () => {
             >
               Browse Jobs
             </a>
-            <a
-              href="/login"
+            <button
+              onClick={() => setAuthModalOpen(true)}
               className="border border-white text-white font-semibold px-6 py-3 rounded-md hover:bg-white hover:text-primary transition text-sm"
             >
               Create Account
-            </a>
+            </button>
           </div>
         </div>
       </section>

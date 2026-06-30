@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuthModal } from "../contexts/AuthModalContext";
 import {
   ArrowRight,
   Briefcase,
@@ -124,6 +125,7 @@ function daysSince(dateString) {
 
 export default function Applications() {
   const navigate = useNavigate();
+  const { setAuthModalOpen } = useAuthModal();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -760,12 +762,12 @@ export default function Applications() {
             >
               Browse Jobs
             </Link>
-            <Link
-              to="/login"
+            <button
+              onClick={() => setAuthModalOpen(true)}
               className="border border-white text-white font-semibold px-6 py-3 rounded-md hover:bg-white hover:text-primary transition text-sm"
             >
               Create Account
-            </Link>
+            </button>
           </div>
         </div>
       </section>
