@@ -5,6 +5,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
 import { BulkUpdateApplicationDto } from './dto/bulk-update-application.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 
 @Injectable()
 export class ApplicationService {
@@ -317,7 +318,9 @@ export class ApplicationService {
    * Update application status with email notifications
    * Only sends emails for: shortlisted, interview, offered
    */
-  async updateStatus(id: number, status: string, companyId: number, userRole: string, hrCompanyId?: number) {
+  async updateStatus(id: number, dto: UpdateStatusDto, companyId: number, userRole: string, hrCompanyId?: number) {
+    const { status, interviewDate, interviewTime, interviewMode, interviewLocation } = dto;
+
     // Get application with job details and user info
     const application = await this.prisma.application.findFirst({
       where: { id },
@@ -353,9 +356,19 @@ export class ApplicationService {
     }
 
     try {
+      const updateData: any = { status };
+
+      // If status is interview, also save interview details
+      if (status === 'interview') {
+        if (interviewDate) updateData.interviewDate = new Date(interviewDate);
+        if (interviewTime) updateData.interviewTime = interviewTime;
+        if (interviewMode) updateData.interviewMode = interviewMode;
+        if (interviewLocation) updateData.interviewLocation = interviewLocation;
+      }
+
       const updatedApplication = await this.prisma.application.update({
         where: { id },
-        data: { status },
+        data: updateData,
         include: {
           job: {
             include: {
@@ -413,10 +426,17 @@ export class ApplicationService {
             job.title,
             companyName,
             {
-              date: 'To be confirmed',
-              time: 'To be confirmed',
-              mode: 'To be confirmed',
-              linkOrAddress: 'Will be shared shortly'
+              date: application.interviewDate 
+                ? new Date(application.interviewDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : 'To be confirmed',
+              time: application.interviewTime || 'To be confirmed',
+              mode: application.interviewMode || 'To be confirmed',
+              linkOrAddress: application.interviewLocation || 'Will be shared shortly'
             }
           );
           break;
@@ -427,15 +447,11 @@ export class ApplicationService {
             user.name,
             job.title,
             companyName,
-            {
-              salary: 'To be discussed',
-              joiningDate: 'To be confirmed'
-            }
           );
           break;
 
         default:
-          // No email for other statuses (applied, reviewing, rejected, withdrawn)
+          // No email for statuses (applied, reviewing, rejected, withdrawn)
           break;
       }
     } catch (emailError) {

@@ -75,16 +75,17 @@ export async function getApplicationById(id) {
 }
 
 // Update application status
-export async function updateApplicationStatus(id, status) {
+export async function updateApplicationStatus(id, status, interviewDetails = {}) {
   try {
     const token = localStorage.getItem('access_token');
+    const body = { status, ...interviewDetails };
     const response = await fetch(`${API_BASE_URL}/applications/${id}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(body),
     });
     return await handleResponse(response);
   } catch (error) {

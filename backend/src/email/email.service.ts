@@ -475,12 +475,11 @@ export class EmailService {
     userName: string,
     jobTitle: string,
     companyName: string,
-    offerData: { salary: string; joiningDate: string; },
   ) {
     try {
       const { html: logoHtml, attachment } = this.getLogoWithFallback();
       
-      const subject = `Job Offer - ${jobTitle}`;
+      const subject = `Congratulations! You've been selected for ${jobTitle}`;
 
       const html = `
         <!DOCTYPE html>
@@ -495,15 +494,10 @@ export class EmailService {
               ${logoHtml}
               <div class="content">
                 <p class="greeting">Dear ${userName},</p>
-                <p>We are pleased to offer you the position of ${jobTitle} at ${companyName}.</p>
-                <div style="background:#f0fdf4;padding:16px;border-radius:6px;border-left:4px solid #22c55e;margin:16px 0;">
-                  <p style="margin:4px 0;"><strong>Position:</strong> ${jobTitle}</p>
-                  <p style="margin:4px 0;"><strong>Compensation:</strong> ${offerData.salary}</p>
-                  <p style="margin:4px 0;"><strong>Start Date:</strong> ${offerData.joiningDate}</p>
-                </div>
-                <p>We will share the formal offer letter shortly.</p>
+                <p>We are pleased to inform you that you have been selected for the position of <strong>${jobTitle}</strong> at <strong>${companyName}</strong>.</p>
+                <p>Our HR team will reach out to you shortly with the offer details and next steps.</p>
                 <div class="divider"></div>
-                <p style="color:#666666;font-size:14px;">Welcome to the team,<br>${companyName} HR Team</p>
+                <p style="color:#666666;font-size:14px;">Welcome to the team!<br>${companyName} HR Team</p>
               </div>
               ${this.getFooterHtml(new Date().getFullYear())}
             </div>

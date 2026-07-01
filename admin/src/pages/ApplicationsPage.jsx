@@ -29,6 +29,10 @@ export const ApplicationsPage = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState('');
+  const [interviewDate, setInterviewDate] = useState('');
+  const [interviewTime, setInterviewTime] = useState('');
+  const [interviewMode, setInterviewMode] = useState('');
+  const [interviewLocation, setInterviewLocation] = useState('');
 
   useEffect(() => {
     fetchApplications();
@@ -79,13 +83,23 @@ export const ApplicationsPage = () => {
   const openEditModal = (app) => {
     setSelectedApp(app);
     setNewStatus(app.status);
+    setInterviewDate(app.interviewDate ? app.interviewDate.split('T')[0] : '');
+    setInterviewTime(app.interviewTime || '');
+    setInterviewMode(app.interviewMode || '');
+    setInterviewLocation(app.interviewLocation || '');
     setEditModalOpen(true);
   };
 
   const handleStatusUpdate = async () => {
     if (!selectedApp || !newStatus || updating) return;
     setUpdating(true);
-    const result = await updateApplicationStatus(selectedApp.id, newStatus);
+    const interviewDetails = newStatus === 'interview' ? {
+      interviewDate: interviewDate || undefined,
+      interviewTime: interviewTime || undefined,
+      interviewMode: interviewMode || undefined,
+      interviewLocation: interviewLocation || undefined,
+    } : {};
+    const result = await updateApplicationStatus(selectedApp.id, newStatus, interviewDetails);
     setUpdating(false);
     if (result.success) {
       fetchApplications();
@@ -416,6 +430,46 @@ export const ApplicationsPage = () => {
               </div>
             </div>
 
+            {/* Interview Details - shown when status is interview */}
+            {selectedApp.status === 'interview' && (selectedApp.interviewDate || selectedApp.interviewTime || selectedApp.interviewMode) && (
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 mb-3">Interview Details</h3>
+                <div className="space-y-3">
+                  {selectedApp.interviewDate && (
+                    <div>
+                      <p className="text-xs text-slate-500">Date</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {new Date(selectedApp.interviewDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  )}
+                  {selectedApp.interviewTime && (
+                    <div>
+                      <p className="text-xs text-slate-500">Time</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedApp.interviewTime}</p>
+                    </div>
+                  )}
+                  {selectedApp.interviewMode && (
+                    <div>
+                      <p className="text-xs text-slate-500">Mode</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedApp.interviewMode}</p>
+                    </div>
+                  )}
+                  {selectedApp.interviewLocation && (
+                    <div>
+                      <p className="text-xs text-slate-500">{selectedApp.interviewMode === 'Online' ? 'Meeting Link' : 'Location'}</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedApp.interviewLocation}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Timeline */}
             <div>
               <h3 className="text-sm font-bold text-slate-900 mb-3">Timeline</h3>
@@ -503,6 +557,60 @@ export const ApplicationsPage = () => {
                 className="w-full"
               />
             </div>
+
+            {/* Interview Details - shown when status is interview */}
+            {newStatus === 'interview' && (
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 mb-3">Interview Details</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Interview Date</label>
+                    <input
+                      type="date"
+                      value={interviewDate}
+                      onChange={(e) => setInterviewDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Interview Time</label>
+                    <input
+                      type="text"
+                      value={interviewTime}
+                      onChange={(e) => setInterviewTime(e.target.value)}
+                      placeholder="e.g. 10:00 AM"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Interview Mode</label>
+                    <Select
+                      value={interviewMode}
+                      onChange={(e) => setInterviewMode(e.target.value)}
+                      options={[
+                        { value: '', label: 'Select mode' },
+                        { value: 'Online', label: 'Online' },
+                        { value: 'In-Person', label: 'In-Person' },
+                        { value: 'Phone', label: 'Phone' },
+                      ]}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">
+                      {interviewMode === 'Online' ? 'Meeting Link' : 'Location / Address'}
+                    </label>
+                    <input
+                      type="text"
+                      value={interviewLocation}
+                      onChange={(e) => setInterviewLocation(e.target.value)}
+                      placeholder={interviewMode === 'Online' ? 'e.g. https://meet.google.com/...' : 'e.g. 123 Main St, City'}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : null}
       </Modal>

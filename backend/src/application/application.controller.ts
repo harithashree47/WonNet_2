@@ -4,6 +4,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { BulkUpdateApplicationDto } from './dto/bulk-update-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -125,13 +126,13 @@ export class ApplicationController {
   @ApiOperation({ summary: 'Update application status' })
   updateStatus(
     @Param('id') id: string,
-    @Body('status') status: string,
+    @Body() updateStatusDto: UpdateStatusDto,
     @Req() req
   ) {
     const hrCompanyId = req.user.role === 'HR' ? req.user.companyId : undefined;
     return this.applicationService.updateStatus(
       +id, 
-      status, 
+      updateStatusDto, 
       req.user.companyId, 
       req.user.role,
       hrCompanyId

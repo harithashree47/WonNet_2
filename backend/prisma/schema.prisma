@@ -249,6 +249,11 @@ model Application {
   noticePeriod    String? 
   status    String   @default("applied")
 
+  interviewDate     DateTime?
+  interviewTime     String?
+  interviewMode     String?
+  interviewLocation String?
+
   createdAt DateTime @default(now())
 
   job       Job  @relation(fields: [jobId], references: [id])
