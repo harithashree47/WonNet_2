@@ -56,10 +56,11 @@ const Header = () => {
     fetchData();
   }, [token, pathname]);
 
-  // ✅ Logout function
+  // ✅ Logout function - navigate to home
   const handleLogout = () => {
     localStorage.removeItem("access_token");
-    navigate("/login");
+    navigate("/");
+    // Don't call setAuthModalOpen here - ProtectedRoute handles it
   };
 
   const navLinks = [

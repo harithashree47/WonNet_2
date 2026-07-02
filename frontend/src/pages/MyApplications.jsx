@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthModal } from "../contexts/AuthModalContext";
 import {
@@ -25,6 +25,8 @@ import {
   XCircle,
   AlertCircle,
   MessageCircle,
+  PartyPopper,
+  Sparkles,
 } from "lucide-react";
 import Breadcrumb from "../components/Breadcrumb";
 import {
@@ -33,6 +35,7 @@ import {
   getUserApplicationStats,
   checkApplication,
 } from "../api/application";
+import confetti from "canvas-confetti";
 
 const ApplicationStatus = {
   APPLIED: "applied",
@@ -123,6 +126,137 @@ function daysSince(dateString) {
   return `${diff} days ago`;
 }
 
+// Celebration Modal Component with Canvas Confetti
+function CelebrationModal({ isOpen, onClose, application }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const canvasRef = useRef(null);
+  const instanceRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      // Create a confetti instance on our own canvas for proper z-index
+      if (!instanceRef.current) {
+        const canvas = document.createElement("canvas");
+        canvas.style.cssText = "position:fixed;pointer-events:none;width:100%;height:100%;top:0;left:0;z-index:9999";
+        document.body.appendChild(canvas);
+        canvasRef.current = canvas;
+        instanceRef.current = confetti.create(canvas, { resize: true, useWorker: true });
+      }
+      setTimeout(() => {
+        fireConfetti();
+      }, 100);
+    } else {
+      setIsVisible(false);
+    }
+    return () => {
+      // Cleanup canvas on unmount
+      if (!isOpen && canvasRef.current) {
+        canvasRef.current.remove();
+        canvasRef.current = null;
+        instanceRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  const fireConfetti = () => {
+    if (instanceRef.current) {
+      instanceRef.current({
+        particleCount: 200,
+        spread: 120,
+        origin: { y: 0.5, x: 0.5 },
+        colors: ["#facc15", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ef4444", "#ec4899", "#06b6d4"],
+        startVelocity: 25,
+        gravity: 0.7,
+        scalar: 0.7,
+        ticks: 250,
+      });
+    }
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="text-center">
+          {/* Celebration icon with animation */}
+          <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg" style={{ animation: "bounceIn 0.5s ease-out forwards" }}>
+            <PartyPopper className="w-10 h-10 text-white" style={{ animation: "wiggle 1.2s ease-in-out infinite" }} />
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">
+             Congratulations!
+          </h2>
+          <p className="text-gray-600 text-sm">
+            You've been selected for
+          </p>
+          <p className="text-lg font-bold text-accent mt-1">
+            {application?.job?.title || "the position"}
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            at {application?.job?.company?.name || "the company"}
+          </p>
+
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-2 justify-center mb-2">
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+              <span className="font-semibold text-emerald-700">You're hired!</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              We're excited to have you on board. Check your email for further instructions from the hiring team.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={onClose}
+              className="bg-primary text-white px-6 py-2.5 rounded-md font-semibold hover:bg-accent hover:text-primary transition text-sm"
+            >
+              Continue
+            </button>
+            <Link
+              to="/dashboard"
+              className="border border-gray-300 text-gray-600 px-6 py-2.5 rounded-md font-semibold hover:border-accent hover:text-accent transition text-sm"
+            >
+              Go to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes wiggle {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          25% { transform: rotate(-8deg) scale(1.1); }
+          50% { transform: rotate(8deg) scale(1.15); }
+          75% { transform: rotate(-4deg) scale(1.05); }
+        }
+        @keyframes bounceIn {
+          0% { transform: scale(0); opacity: 0; }
+          60% { transform: scale(1.15); opacity: 1; }
+          80% { transform: scale(0.9); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function Applications() {
   const navigate = useNavigate();
   const { setAuthModalOpen } = useAuthModal();
@@ -142,6 +276,8 @@ export default function Applications() {
   });
   const [withdrawing, setWithdrawing] = useState(null);
   const [expandedApp, setExpandedApp] = useState(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
 
   useEffect(() => {
     fetchApplications();
@@ -227,6 +363,11 @@ export default function Applications() {
     setCurrentPage(1);
   };
 
+  const handleCelebrationOpen = (app) => {
+    setSelectedApplication(app);
+    setShowCelebration(true);
+  };
+
   const activeCount = useMemo(() => {
     return applications.filter(
       (a) =>
@@ -290,6 +431,13 @@ export default function Applications() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <Breadcrumb items={[{ label: "My Applications", href: "/applications" }]} />
+
+      {/* Celebration Modal */}
+      <CelebrationModal
+        isOpen={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        application={selectedApplication}
+      />
 
       <section className="relative overflow-hidden bg-white">
         <div
@@ -519,8 +667,12 @@ export default function Applications() {
                           </button>
 
                           {isOffered && (
-                            <button className="bg-accent text-primary text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition whitespace-nowrap">
-                              Accept Offer →
+                            <button
+                              onClick={() => handleCelebrationOpen(app)}
+                              className="bg-accent text-primary text-xs md:text-sm px-4 py-2 rounded-md font-semibold hover:bg-yellow-300 transition whitespace-nowrap inline-flex items-center gap-1.5"
+                            >
+                              <PartyPopper size={14} />
+                              Open Now →
                             </button>
                           )}
 
@@ -667,6 +819,15 @@ export default function Applications() {
                         </div>
 
                         <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap items-center gap-3">
+                          {isOffered && (
+                            <button
+                              onClick={() => handleCelebrationOpen(app)}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-accent text-primary px-4 py-2 rounded-md hover:bg-yellow-300 transition"
+                            >
+                              <PartyPopper size={14} />
+                              🎉 Open Celebration
+                            </button>
+                          )}
                           {!isOffered && !isDeclined && !isWithdrawn && (
                             <>
                               <Link
