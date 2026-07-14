@@ -8,7 +8,6 @@ import { UsersPage } from './pages/UsersPage';
 import { JobsPage } from './pages/JobsPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
 import { StaffManagementPage } from './pages/StaffManagementPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
@@ -34,7 +33,6 @@ const PAGE_META = {
   hrs: { title: 'HR Management', subtitle: 'Create and manage HR accounts' },
   companies: { title: 'Companies', subtitle: 'Manage all registered companies' },
   applications: { title: 'Applications', subtitle: 'Review and manage applications' },
-  analytics: { title: 'Analytics', subtitle: 'Deep insights into your platform' },
   categories: { title: 'Categories', subtitle: 'Manage job categories (Master Data)' },
   'experience-levels': { title: 'Experience Levels', subtitle: 'Manage experience level options (Master Data)' },
   'employment-types': { title: 'Employment Types', subtitle: 'Manage employment type options (Master Data)' },
@@ -53,7 +51,6 @@ const PAGE_META = {
 },
   'education-levels': { title: 'Education Levels', subtitle: 'Manage education requirement options (Master Data)' },
   departments: { title: 'Departments', subtitle: 'Manage departments (Master Data)' },
-  messages: { title: 'Messages', subtitle: 'Your inbox and conversations' },
   settings: { title: 'Settings', subtitle: 'Manage your account & preferences' },
 };
 
@@ -90,7 +87,7 @@ const Shell = ({ user, onLogout }) => {
 
   const navigate = (page) => {
     if (isHr) {
-      const hrAllowed = ['dashboard', 'applications', 'messages', 'settings'];
+      const hrAllowed = ['dashboard', 'applications', 'settings'];
       if (!hrAllowed.includes(page)) {
         setActive('dashboard');
         return;
@@ -115,8 +112,6 @@ const Shell = ({ user, onLogout }) => {
         return <CompaniesPage />;
       case 'applications':
         return <ApplicationsPage />;
-      case 'analytics':
-        return <AnalyticsPage />;
       case 'categories':
         return <CategoriesPage />;
       case 'experience-levels':
@@ -137,8 +132,6 @@ const Shell = ({ user, onLogout }) => {
         return <DepartmentsPage />;
       case 'settings':
         return <SettingsPage user={user} />;
-      case 'messages':
-        return <PlaceholderPage id={active} />;
       default:
         return <DashboardPage onNavigate={setActive} />;
     }

@@ -13,14 +13,11 @@ const navItems = [
   { id: 'jobs', label: 'Jobs', icon: 'briefcase' },
   { id: 'companies', label: 'Companies', icon: 'building' },
   { id: 'applications', label: 'Applications', icon: 'file-check' },
-  { id: 'analytics', label: 'Analytics', icon: 'bar-chart' },
-  { id: 'messages', label: 'Messages', icon: 'mail' },
 ];
 
 const hrNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'gauge' },
   { id: 'applications', label: 'Applications', icon: 'file-check' },
-  { id: 'messages', label: 'Messages', icon: 'mail' },
   { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
 

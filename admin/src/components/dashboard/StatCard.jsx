@@ -1,5 +1,4 @@
 import React from 'react';
-import { Sparkline } from '../charts/Sparkline';
 import { Card } from '../ui/Card';
 import { ToneIcon } from '../ui/ToneIcon';
 import { Icon } from '../ui/Icon';
@@ -28,10 +27,6 @@ export const StatCard = ({ stat }) => {
         <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
           {stat.value}
         </div>
-      </div>
-
-      <div className="relative mt-4">
-        <Sparkline data={stat.spark} width={220} height={40} />
       </div>
     </Card>
   );

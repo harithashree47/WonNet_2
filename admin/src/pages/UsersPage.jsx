@@ -367,6 +367,7 @@ export const UsersPage = () => {
           </div>
         )}
       </Modal>
+
     </div>
   );
 };

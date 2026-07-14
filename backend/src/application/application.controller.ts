@@ -52,6 +52,13 @@ export class ApplicationController {
   @ApiOperation({ summary: 'Get company\'s application statistics' })
   getCompanyStats(@Req() req) {
     const companyId = req.user.companyId;
+    const userRole = req.user.role;
+    
+    // SUPER_ADMIN without companyId gets global stats
+    if (!companyId && userRole === 'SUPER_ADMIN') {
+      return this.applicationService.getGlobalApplicationStats();
+    }
+    
     if (!companyId) {
       return { total: 0, statuses: {}, byJob: [] };
     }

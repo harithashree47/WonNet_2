@@ -9,10 +9,11 @@ import {
   Delete,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
@@ -96,5 +97,19 @@ export class AuthController {
   @Roles('SUPER_ADMIN', 'ADMIN')
   updateUserStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.authService.updateUserStatus(+id, status);
+  }
+
+  // ✅ RESET PASSWORD (SELF OR SUPER_ADMIN FOR ANY USER)
+  @Post('reset-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reset password - self or SUPER_ADMIN can reset any user' })
+  resetPassword(@Body() body: ResetPasswordDto, @Req() req) {
+    return this.authService.resetPassword(
+      req.user.sub,
+      req.user.role,
+      body.newPassword,
+      body.email,
+    );
   }
 }

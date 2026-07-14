@@ -7,6 +7,7 @@ import { Table, THead, TBody, TR, TH, TD } from '../components/ui/Table';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { ToneIcon } from '../components/ui/ToneIcon';
+import { Key } from 'lucide-react';
 import { createAdmin, getCurrentUser, isAuthenticated, getAdmins, updateAdmin, deleteAdmin } from '../api/auth';
 
 const statusTone = (s) => ({ active: 'success', inactive: 'default' }[s] || 'default');
@@ -26,6 +27,19 @@ export const StaffManagementPage = () => {
     active: 0,
     restricted: 0
   });
+  const [resetPwStaff, setResetPwStaff] = useState(null);
+  const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [resetNewPw, setResetNewPw] = useState('');
+  const [resetPwLoading, setResetPwLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('wonnet_admin');
+    if (stored) {
+      try { setCurrentUser(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -173,6 +187,39 @@ export const StaffManagementPage = () => {
     setLoading(false);
   };
 
+  const handleResetPassword = async () => {
+    if (!resetPwStaff || resetNewPw.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+    setResetPwLoading(true);
+    try {
+      const API_BASE_URL = 'http://localhost:3000';
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email: resetPwStaff.email, newPassword: resetNewPw }),
+      });
+      if (response.ok) {
+        alert(`Password reset successfully for ${resetPwStaff.name}`);
+        setResetPwOpen(false);
+        setResetPwStaff(null);
+        setResetNewPw('');
+      } else {
+        const result = await response.json();
+        alert(result.message || 'Failed to reset password');
+      }
+    } catch (error) {
+      alert('Network error occurred');
+    } finally {
+      setResetPwLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -308,6 +355,17 @@ export const StaffManagementPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </button>
+
+                        {/* Reset Password Button - SUPER_ADMIN only */}
+                        {currentUser?.role === 'SUPER_ADMIN' && staff.role !== 'SUPER_ADMIN' && (
+                          <button
+                            onClick={() => { setResetPwStaff(staff); setResetPwOpen(true); }}
+                            className="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-amber-100 hover:text-amber-600 transition-all duration-200"
+                            title="Reset Password"
+                          >
+                            <Key className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </button>
+                        )}
 
                         {/* Edit Button */}
                         <button
@@ -524,6 +582,46 @@ export const StaffManagementPage = () => {
             </p>
           </div>
         )}
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        open={resetPwOpen}
+        onClose={() => { setResetPwOpen(false); setResetPwStaff(null); setResetNewPw(''); }}
+        title="Reset Password"
+        subtitle={`Changing password for ${resetPwStaff?.name || '...'}`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setResetPwOpen(false); setResetPwStaff(null); setResetNewPw(''); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleResetPassword} disabled={resetPwLoading || resetNewPw.length < 8} loading={resetPwLoading}>
+              Reset Password
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4 py-4">
+          {resetPwStaff && (
+            <div className="text-center mb-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-amber-100 flex items-center justify-center mb-2">
+                <Key className="w-6 h-6 text-amber-600" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900">{resetPwStaff.name}</p>
+              <p className="text-xs text-slate-500">{resetPwStaff.email}</p>
+            </div>
+          )}
+          <Input
+            type="password"
+            label="New Password"
+            placeholder="Enter new password (min 8 characters)"
+            value={resetNewPw}
+            onChange={(e) => setResetNewPw(e.target.value)}
+            hint="Must be at least 8 characters"
+            required
+          />
+        </div>
       </Modal>
     </div>
   );

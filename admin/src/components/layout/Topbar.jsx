@@ -20,7 +20,6 @@ const profileMenu = [
 
 export const Topbar = ({ user, onMenuClick, onLogout, pageTitle, pageSubtitle }) => {
   const { theme, toggleTheme } = useTheme();
-  const [search, setSearch] = useState('');
   const [showProfile, setShowProfile] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
 
@@ -44,25 +43,7 @@ export const Topbar = ({ user, onMenuClick, onLogout, pageTitle, pageSubtitle })
           </div>
         </div>
 
-        <div className="flex-1 max-w-md mx-auto">
-          <div className="relative">
-            <Icon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search anything..."
-              className="w-full pl-10 pr-14 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition"
-            />
-           
-          </div>
-        </div>
-
         <div className="flex items-center gap-2">
-         
-
-
-        
-
           <div className="relative">
             <button
               onClick={() => { setShowProfile((v) => !v); setShowNotif(false); }}

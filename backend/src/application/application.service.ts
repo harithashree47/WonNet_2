@@ -81,8 +81,8 @@ export class ApplicationService {
       });
 
       return application;
-    } catch (error) {
-      if (error.code === 'P2002') {
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
         throw new BadRequestException('You have already applied for this job');
       }
       throw error;
@@ -306,8 +306,8 @@ export class ApplicationService {
           }
         }
       });
-    } catch (error) {
-      if (error.code === 'P2002') {
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
         throw new BadRequestException('Application already exists');
       }
       throw new BadRequestException('Failed to update application');
@@ -584,6 +584,29 @@ export class ApplicationService {
         title: job.title,
         applications: job._count.applications
       }))
+    };
+  }
+
+  async getGlobalApplicationStats() {
+    const [total, byStatus] = await Promise.all([
+      this.prisma.application.count(),
+      this.prisma.application.groupBy({
+        by: ['status'],
+        _count: {
+          status: true
+        }
+      })
+    ]);
+
+    const statusCounts = {};
+    byStatus.forEach(item => {
+      statusCounts[item.status] = item._count.status;
+    });
+
+    return {
+      total,
+      statuses: statusCounts,
+      byJob: []
     };
   }
 

@@ -250,6 +250,30 @@ export class AuthService {
     });
   }
 
+  // ✅ RESET PASSWORD (SELF OR ADMIN FOR ANY USER)
+  async resetPassword(userId: number, userRole: string, newPassword: string, targetEmail?: string) {
+    let targetUserId = userId;
+
+    // SUPER_ADMIN can reset any user's password by email
+    if (userRole === 'SUPER_ADMIN' && targetEmail) {
+      const targetUser = await this.prisma.user.findUnique({
+        where: { email: targetEmail },
+      });
+      if (!targetUser) {
+        throw new BadRequestException('User with this email not found');
+      }
+      targetUserId = targetUser.id;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: targetUserId },
+      data: { password: hashedPassword },
+    });
+
+    return { message: 'Password updated successfully' };
+  }
+
   // ✅ ADMIN/SUPER ADMIN/HR LOGIN (SINGLE ENDPOINT FOR ALL STAFF)
   async adminLogin(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
