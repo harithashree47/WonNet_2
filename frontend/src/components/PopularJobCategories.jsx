@@ -78,9 +78,6 @@ const PopularJobCategories = () => {
                 <h3 className="relative font-semibold text-primary text-base md:text-lg">
                   {cat.name}
                 </h3>
-                <p className="relative text-xs md:text-sm text-gray-500 mt-2">
-                  ({vacancyCount} Open Vacancies)
-                </p>
               </div>
             );
           })}

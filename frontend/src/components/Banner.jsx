@@ -34,7 +34,7 @@ const Banner = () => {
 
   return (
     <section
-      className="relative min-h-[70vh] flex items-center justify-center bg-cover bg-center"
+      className="relative min-h-[50vh] md:min-h-[70vh] flex items-center justify-center bg-cover bg-center pt-16 md:pt-0"
       style={{
         backgroundImage:
           "url('https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1600')",
@@ -45,8 +45,8 @@ const Banner = () => {
 
       <div className="relative max-w-6xl mx-auto px-4 w-full">
         {/* Heading */}
-        <div className="text-center mb-10" data-aos="fade-up">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3">
+        <div className="text-center mb-8 md:mb-4" data-aos="fade-up">
+          <h1 className="text-xl md:text-3xl lg:text-4xl font-bold text-white mb-3">
             The Easiest Way to{" "}
             <span className="text-accent">Get Your New Job</span>
           </h1>
@@ -70,7 +70,7 @@ const Banner = () => {
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Enter keywords..."
+              placeholder="Enter job title..."
               className="w-full px-4 py-2.5 rounded-sm bg-white text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
@@ -131,8 +131,8 @@ const Banner = () => {
           data-aos="fade-up"
           data-aos-delay="150"
         >
-          <span className="font-semibold text-white">Keywords: </span>
-          <span className="italic">Html, Css, WordPress</span>
+          <span className="font-semibold text-white">Try: </span>
+          <span className="italic">Frontend Developer, Backend Engineer</span>
         </p>
       </div>
     </section>
