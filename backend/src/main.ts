@@ -22,6 +22,7 @@ async function bootstrap() {
     origin: [
       "http://localhost:5173",
       "http://localhost:5174", 
+       "https://won-net-2.vercel.app",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
@@ -49,7 +50,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Server running on http://localhost:${port}`);
-  console.log(`Uploads available at http://localhost:${port}/uploads/`);
+console.log(`Uploads available at http://localhost:${port}/uploads/`);
   console.log(`Assets available at http://localhost:${port}/assets/`);
 }
 bootstrap();
