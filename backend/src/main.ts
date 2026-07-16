@@ -46,9 +46,10 @@ async function bootstrap() {
   const doc = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, doc);
 
-  await app.listen(3000);
-  console.log('Server running on http://localhost:3000');
-  console.log('Uploads available at http://localhost:3000/uploads/');
-  console.log('Assets available at http://localhost:3000/assets/');
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Uploads available at http://localhost:${port}/uploads/`);
+  console.log(`Assets available at http://localhost:${port}/assets/`);
 }
 bootstrap();
