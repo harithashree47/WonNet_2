@@ -22,8 +22,9 @@ async function bootstrap() {
     origin: [
       "http://localhost:5173",
       "http://localhost:5174", 
-       "https://won-net-2.vercel.app",
-       "https://won-net-2-ol7l.vercel.app/",
+      "https://won-net-2.vercel.app",
+      "https://won-net-2-ol7l.vercel.app",
+      "https://wonnet-2.onrender.com",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
