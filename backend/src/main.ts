@@ -19,13 +19,33 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174", 
-      "https://won-net-2.vercel.app",
-      "https://won-net-2-ol7l.vercel.app",
-      "https://wonnet-2.onrender.com",
-    ],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://won-net-2.vercel.app",
+        "https://won-net-2-ol7l.vercel.app",
+        "https://wonnet-2.onrender.com",
+      ];
+      
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // Allow any Vercel deployment (for preview deployments)
+      if (origin.endsWith('.vercel.app')) {
+        callback(null, true);
+        return;
+      }
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   });
