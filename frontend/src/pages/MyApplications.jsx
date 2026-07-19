@@ -508,19 +508,19 @@ export default function Applications() {
           </div>
 
           <div className="mb-4" data-aos="fade-up">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="relative max-w-md group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-accent transition-colors duration-200" />
               <input
                 type="text"
                 placeholder="Search by job title, company, or location..."
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                className="w-full pl-12 pr-10 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 focus:outline-none focus:bg-white focus:border-accent/30 focus:ring-2 focus:ring-accent/30 transition-all duration-200"
               />
               {searchTerm && (
                 <button
                   onClick={() => handleSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>

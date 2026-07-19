@@ -22,11 +22,11 @@ const InputField = ({
       )}
 
       {/* Input wrapper */}
-      <div className="relative">
+      <div className="relative group">
         {/* Left icon */}
         {Icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none flex items-center">
-            <Icon size={16} />
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none flex items-center group-focus-within:text-accent transition-colors duration-200">
+            <Icon size={18} />
           </span>
         )}
 
@@ -37,16 +37,16 @@ const InputField = ({
           onChange={onChange}
           disabled={disabled}
           className={`
-            w-full py-2.5 rounded-md border text-sm
-            focus:outline-none focus:ring-2 focus:ring-accent
-            text-primary transition
-            ${Icon ? "pl-9" : "pl-4"}
+            w-full py-3.5 rounded-xl border text-sm
+            focus:outline-none focus:ring-2 focus:ring-accent/30
+            text-primary transition-all duration-200
+            ${Icon ? "pl-11" : "pl-4"}
             ${rightElement ? "pr-10" : "pr-4"}
             ${disabled ? "opacity-60 cursor-not-allowed bg-gray-100" : ""}
             ${
               error
                 ? "border-red-400 bg-red-50 focus:ring-red-300"
-                : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:bg-white focus:border-accent/30"
             }
           `}
         />

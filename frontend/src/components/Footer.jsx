@@ -14,7 +14,7 @@ const Footer = () => {
                 <Globe2 size={22} />
               </div>
               <span className="text-xl font-bold text-white">
-                Won<span className="text-accent">Net</span>
+                Won<span className="text-accent">Net!</span>
               </span>
             </div>
             <p className="text-sm text-gray-300 leading-relaxed max-w-xs">

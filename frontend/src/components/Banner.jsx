@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, MapPin, Briefcase } from "lucide-react";
 import { getActiveCategories } from "../api/category";
 import { getLocations } from "../api/location";
 
@@ -11,6 +11,7 @@ const Banner = () => {
   const [category, setCategory] = useState("");
   const [locations, setLocations] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [flipping, setFlipping] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,11 +26,14 @@ const Banner = () => {
   }, []);
 
   const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (keyword) params.set("keyword", keyword);
-    if (location) params.set("location", location);
-    if (category) params.set("category", category);
-    navigate(`/jobs?${params.toString()}`);
+    setFlipping(true);
+    setTimeout(() => {
+      const params = new URLSearchParams();
+      if (keyword) params.set("keyword", keyword);
+      if (location) params.set("location", location);
+      if (category) params.set("category", category);
+      navigate(`/jobs?${params.toString()}`);
+    }, 700);
   };
 
   return (
@@ -37,103 +41,125 @@ const Banner = () => {
       className="relative min-h-[50vh] md:min-h-[70vh] flex items-center justify-center bg-cover bg-center pt-16 md:pt-0"
       style={{
         backgroundImage:
-          "url('https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1600')",
+          "url('https://t4.ftcdn.net/jpg/09/02/53/81/360_F_902538150_JCEcejSQkRHHR7d5jE1nbmfhXHdcd9E3.jpg')",
       }}
     >
-      {/* dark overlay */}
-      <div className="absolute inset-0 bg-black/65" />
+      <div className="absolute inset-0 bg-black/50" />
 
       <div className="relative max-w-6xl mx-auto px-4 w-full">
         {/* Heading */}
-        <div className="text-center mb-8 md:mb-4" data-aos="fade-up">
-          <h1 className="text-xl md:text-3xl lg:text-4xl font-bold text-white mb-3">
-            The Easiest Way to{" "}
-            <span className="text-accent">Get Your New Job</span>
+        <div className="text-center mb-4 md:mb-12" data-aos="fade-up">
+          <h1 className="text-2xl md:text-4xl lg:text-[42px] font-bold text-white mb-1 md:mb-3 tracking-tight leading-tight">
+            Find Your Next{" "}
+            <span className="text-accent">Dream Job</span>
           </h1>
-          <p className="text-sm md:text-base lg:text-lg text-gray-300">
-            Find Jobs, Employment & Career Opportunities
+          <p className="text-xs md:text-base text-gray-200/90">
+            Search from millions of job opportunities
           </p>
         </div>
 
-        {/* Search filters */}
+        {/* Search card */}
         <div
-          className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
-          data-aos="fade-up"
-          data-aos-delay="100"
+          className="bg-white rounded-xl md:rounded-2xl shadow-2xl p-1.5 md:p-1.5 max-w-full md:max-w-5xl mx-auto relative"
+          style={{ perspective: "1200px" }}
         >
-          {/* Keyword */}
-          <div className="md:col-span-1">
-            <label className="block text-white text-sm font-semibold mb-2">
-              Search Job Now:
-            </label>
-            <input
-              type="text"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Enter job title..."
-              className="w-full px-4 py-2.5 rounded-sm bg-white text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-            />
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="block text-white text-sm font-semibold mb-2">
-              Job Locations
-            </label>
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-sm bg-white text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+          <div
+            className="relative transition-all duration-700"
+            style={{ transformStyle: "preserve-3d", transform: flipping ? "rotateY(180deg)" : "rotateY(0deg)" }}
+          >
+            {/* Front */}
+            <div
+              className="transition-all duration-500"
+              style={{ backfaceVisibility: "hidden", opacity: flipping ? 0 : 1 }}
             >
-              <option value="">Job Locations</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.city}, {loc.state}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="flex flex-col md:flex-row md:items-stretch gap-2 md:gap-3">
+                {/* Keyword */}
+                <div className="flex-1 relative group" data-aos="fade-up" data-aos-delay="0">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 md:pl-4 pointer-events-none text-gray-400 group-focus-within:text-accent transition-all duration-200">
+                    <Search size={16} className={`transition-transform duration-300 ${keyword ? 'rotate-90' : 'rotate-0'}`} />
+                  </div>
+                  <input
+                    type="text"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    placeholder="Job title, keyword..."
+                    className="w-full pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-lg md:rounded-xl bg-gray-50 text-gray-700 text-xs md:text-[15px] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-accent/30 transition-all duration-200"
+                  />
+                </div>
 
-          {/* Category */}
-          <div>
-            <label className="block text-white text-sm font-semibold mb-2">
-              Job Categories
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-sm bg-white text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-              <option value="">Job Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
+                {/* Location */}
+                <div className="flex-1 relative group" data-aos="fade-up" data-aos-delay="100">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 md:pl-4 pointer-events-none text-gray-400 group-focus-within:text-accent transition-colors duration-200">
+                    <MapPin size={14} className={`transition-transform duration-300 ${location ? 'rotate-12' : 'rotate-0'}`} />
+                  </div>
+                  <select
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full pl-9 md:pl-11 pr-7 md:pr-8 py-2.5 md:py-3.5 rounded-lg md:rounded-xl bg-gray-50 text-gray-700 text-xs md:text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-accent/30 appearance-none cursor-pointer transition-all duration-200 hover:shadow-md"
+                  >
+                    <option value="">Location</option>
+                    {locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.city}, {loc.state}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          {/* Search button */}
-          <div>
-            <button
-              onClick={handleSearch}
-              className="w-full flex items-center justify-center gap-2 bg-accent text-primary font-semibold px-6 py-2.5 rounded-sm hover:bg-yellow-300 transition text-sm"
+                {/* Category */}
+                <div className="flex-1 relative group" data-aos="fade-up" data-aos-delay="200">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 md:pl-4 pointer-events-none text-gray-400 group-focus-within:text-accent transition-colors duration-200">
+                    <Briefcase size={14} className={`transition-transform duration-300 ${category ? '-rotate-12' : 'rotate-0'}`} />
+                  </div>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full pl-9 md:pl-11 pr-7 md:pr-8 py-2.5 md:py-3.5 rounded-lg md:rounded-xl bg-gray-50 text-gray-700 text-xs md:text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-accent/30 appearance-none cursor-pointer transition-all duration-200 hover:shadow-md"
+                  >
+                    <option value="">Category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Search button */}
+                <button
+                  onClick={handleSearch}
+                  className="md:hidden flex items-center justify-center gap-2 bg-accent hover:bg-yellow-400 text-primary font-semibold px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md text-xs w-full"
+                  data-aos="fade-up"
+                  data-aos-delay="300"
+                >
+                  <Search size={14} />
+                  Search
+                </button>
+
+                <button
+                  onClick={handleSearch}
+                  className="hidden md:flex items-center justify-center gap-2 bg-accent hover:bg-yellow-400 text-primary font-semibold px-6 md:px-8 py-2.5 md:py-3.5 rounded-lg md:rounded-xl transition-all duration-200 shadow-md hover:shadow-xl hover:scale-105 active:scale-95 text-xs md:text-sm whitespace-nowrap"
+                  data-aos="fade-up"
+                  data-aos-delay="300"
+                >
+                  <Search size={14} />
+                  <span className="md:inline hidden">Search</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Back */}
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl shadow-2xl"
+              style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)", opacity: flipping ? 1 : 0, transition: "opacity 0.5s" }}
             >
-              <Search size={16} />
-              Search
-            </button>
+              <div className="text-center">
+                <div className="inline-block w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mb-2" />
+                <p className="text-sm text-gray-600 font-medium">Searching jobs...</p>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Keywords hint */}
-        <p
-          className="mt-4 text-gray-300 text-xs"
-          data-aos="fade-up"
-          data-aos-delay="150"
-        >
-          <span className="font-semibold text-white">Try: </span>
-          <span className="italic">Frontend Developer, Backend Engineer</span>
-        </p>
       </div>
     </section>
   );

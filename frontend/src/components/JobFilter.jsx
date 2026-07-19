@@ -31,16 +31,16 @@ const FilterContent = ({
         <label className="font-semibold text-gray-800 mb-1.5 block text-sm">
           Search
         </label>
-        <div className="relative">
+        <div className="relative group">
           <Search
-            className="absolute left-3 top-2.5 text-gray-400"
-            size={16}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accent transition-colors duration-200"
+            size={18}
           />
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="Job title..."
-            className="w-full pl-9 pr-3 h-10 rounded-lg border border-gray-200 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 outline-none transition text-sm"
+            className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-accent/30 focus:ring-2 focus:ring-accent/30 outline-none transition-all duration-200 text-sm text-gray-700"
             autoComplete="off"
           />
         </div>
@@ -51,15 +51,15 @@ const FilterContent = ({
         <label className="font-semibold text-gray-800 mb-1.5 block text-sm">
           Category
         </label>
-        <div className="relative">
+        <div className="relative group">
           <Briefcase
-            className="absolute left-3 top-2.5 text-gray-400"
-            size={16}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accent transition-colors duration-200"
+            size={18}
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full h-10 rounded-lg border border-gray-200 pl-9 pr-3 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 outline-none transition text-sm"
+            className="w-full py-3.5 rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-8 focus:bg-white focus:border-accent/30 focus:ring-2 focus:ring-accent/30 outline-none transition-all duration-200 text-sm text-gray-700 appearance-none cursor-pointer"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -76,15 +76,15 @@ const FilterContent = ({
         <label className="font-semibold text-gray-800 mb-1.5 block text-sm">
           Location
         </label>
-        <div className="relative">
+        <div className="relative group">
           <MapPin
-            className="absolute left-3 top-2.5 text-gray-400"
-            size={16}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accent transition-colors duration-200"
+            size={18}
           />
           <select
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full h-10 rounded-lg border border-gray-200 pl-9 pr-3 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 outline-none transition text-sm"
+            className="w-full py-3.5 rounded-xl border border-gray-200 bg-gray-50 pl-11 pr-8 focus:bg-white focus:border-accent/30 focus:ring-2 focus:ring-accent/30 outline-none transition-all duration-200 text-sm text-gray-700 appearance-none cursor-pointer"
           >
             <option value="">All Locations</option>
             {locations.map((loc) => (
