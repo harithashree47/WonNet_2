@@ -1,54 +1,94 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { join } from 'path';
 
+interface BrevoEmailPayload {
+  sender: { email: string; name: string };
+  to: { email: string; name?: string }[];
+  subject: string;
+  htmlContent: string;
+  textContent: string;
+  attachment?: {
+    content: string;
+    name: string;
+    contentType: string;
+  };
+}
+
 @Injectable()
 export class EmailService {
-  private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(EmailService.name);
   private cachedLogo: string | null = null;
   private cachedLogoAttached: Buffer | null = null;
 
   constructor(private configService: ConfigService) {
     this.loadLogo();
-    this.initializeTransporter();
   }
 
-  private async initializeTransporter() {
-    const host = this.configService.get('EMAIL_HOST') || 'smtp-relay.brevo.com';
-    const port = parseInt(this.configService.get('EMAIL_PORT') || '587');
-    const user = this.configService.get('EMAIL_USER');
-    const pass = this.configService.get('EMAIL_PASSWORD');
+  private getBrevoApiKey(): string {
+    const apiKey = this.configService.get('EMAIL_PASSWORD');
+    if (!apiKey) {
+      throw new Error('EMAIL_PASSWORD (Brevo API key) is not configured');
+    }
+    return apiKey;
+  }
 
-    const portsToTry = [port, 587, 25, 465];
+  private getBrevoSender(): { email: string; name: string } {
+    const fromEmail = this.configService.get('EMAIL_FROM') || 'harithashreeit2001@gmail.com';
+    const name = fromEmail.split('@')[0].replace(/\./g, ' ');
+    return { email: fromEmail, name };
+  }
 
-    for (const tryPort of portsToTry) {
-      try {
-        this.logger.log(`🔌 Trying SMTP ${host}:${tryPort}...`);
-        
-        this.transporter = nodemailer.createTransport({
-          host,
-          port: tryPort,
-          secure: tryPort === 465,
-          auth: { user, pass },
-          tls: { rejectUnauthorized: false },
-          connectionTimeout: 10000,
-          socketTimeout: 15000,
-        });
+  private async sendBrevoEmail(
+    to: string,
+    subject: string,
+    html: string,
+    text: string,
+    attachment: { filename: string; content: Buffer; contentType: string } | null = null,
+  ): Promise<void> {
+    const apiKey = this.getBrevoApiKey();
+    const sender = this.getBrevoSender();
 
-        await this.transporter.verify();
-        this.logger.log(`✅ Email transporter ready on port ${tryPort}`);
-        return;
-        
-      } catch (error: any) {
-        this.logger.warn(`⚠️ Port ${tryPort} failed: ${error.message}`);
-        this.transporter = null;
-      }
+    const payload: BrevoEmailPayload = {
+      sender,
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    };
+
+    if (attachment) {
+      payload.attachment = {
+        content: attachment.content.toString('base64'),
+        name: attachment.filename,
+        contentType: attachment.contentType,
+      };
     }
 
-    this.logger.warn('❌ All SMTP ports failed. Email sending will be disabled until connection is restored.');
+    try {
+      this.logger.log(`📧 Sending email via Brevo HTTP API to ${to}...`);
+
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(`❌ Brevo API error ${response.status}: ${errorText}`);
+        return;
+      }
+
+      const result = await response.json();
+      this.logger.log(`✅ Email sent successfully to ${to}. MessageId: ${result.messageId}`);
+    } catch (error: any) {
+      this.logger.error(`❌ Failed to send email to ${to}: ${error.message}`);
+    }
   }
 
   /**
@@ -61,7 +101,7 @@ export class EmailService {
       }
 
       const filePath = join(process.cwd(), 'assets', 'wonnet.png');
-      
+
       if (!fs.existsSync(filePath)) {
         this.logger.warn(`⚠️ Logo not found at: ${filePath}`);
         return { base64: null, buffer: null };
@@ -69,36 +109,31 @@ export class EmailService {
 
       const fileBuffer = fs.readFileSync(filePath);
       const fileSizeKB = (fileBuffer.length / 1024).toFixed(2);
-      
+
       this.logger.log(`📁 Logo loaded: ${filePath}`);
       this.logger.log(`📊 Size: ${fileSizeKB} KB`);
 
-      // Cache both formats
       this.cachedLogoAttached = fileBuffer;
       this.cachedLogo = `data:image/png;base64,${fileBuffer.toString('base64')}`;
-      
+
       return { base64: this.cachedLogo, buffer: this.cachedLogoAttached };
-      
     } catch (error) {
       this.logger.error('Failed to load logo:', error);
       return { base64: null, buffer: null };
     }
   }
 
-  /**
-   * Method 1: Embedded base64 image (works in most clients)
-   */
   private getLogoHtml(): string {
     const { base64 } = this.loadLogo();
-    
+
     if (base64) {
       return `
         <div style="text-align:center;padding:20px 0 10px 0;">
           <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
-            <img 
-              src="${base64}" 
-              alt="WonNet" 
-              width="40" 
+            <img
+              src="${base64}"
+              alt="WonNet"
+              width="40"
               height="40"
               style="display:inline-block;border:0;border-radius:8px;"
             />
@@ -116,9 +151,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Fallback: Text-based logo (always works)
-   */
   private getFallbackLogoHtml(): string {
     return `
       <div style="text-align:center;padding:20px 0 10px 0;">
@@ -135,92 +167,20 @@ export class EmailService {
     `;
   }
 
-  /**
-   * Method 2: Send logo as attachment with CID (works in ALL clients)
-   * This is the most reliable method for email logos
-   */
-  private getLogoAttachment(): any {
+  private getLogoAttachment(): { filename: string; content: Buffer; contentType: string } | null {
     const { buffer } = this.loadLogo();
-    
+
     if (buffer) {
       return {
         filename: 'wonnet-logo.png',
-        cid: 'logo', // This matches the img src
         content: buffer,
         contentType: 'image/png',
-        contentDisposition: 'inline',
       };
     }
     return null;
   }
 
-  /**
-   * Method 3: Combined approach - both CID and base64 (maximum compatibility)
-   * Logo and text on the SAME LINE (horizontal layout)
-   */
-  private getLogoWithFallback(): { html: string; attachment: any | null } {
-    const { base64, buffer } = this.loadLogo();
-    
-    // If logo exists, use CID method (most reliable)
-    if (buffer) {
-      return {
-        html: `
-          <div style="text-align:center;padding:20px 0 10px 0;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
-              <img 
-                src="cid:logo" 
-                alt="WonNet" 
-                width="40" 
-                height="40"
-                style="display:inline-block;border:0;border-radius:8px;"
-              />
-              <div style="text-align:left;">
-                <h1 style="font-size:24px;font-weight:700;color:#1a202c;margin:0;line-height:1.2;">
-                  Won<span style="color:#fbbf24;">Net!</span>
-                </h1>
-                <p style="font-size:12px;color:#718096;margin:2px 0 0 0;">Smart Job & Talent Network</p>
-              </div>
-            </div>
-          </div>
-        `,
-        attachment: this.getLogoAttachment()
-      };
-    }
-    
-    // Fallback: use base64 or text
-    if (base64) {
-      return {
-        html: `
-          <div style="text-align:center;padding:20px 0 10px 0;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
-              <img 
-                src="${base64}" 
-                alt="WonNet" 
-                width="40" 
-                height="40"
-                style="display:inline-block;border:0;border-radius:8px;"
-              />
-              <div style="text-align:left;">
-                <h1 style="font-size:24px;font-weight:700;color:#1a202c;margin:0;line-height:1.2;">
-                  Won<span style="color:#fbbf24;">Net!</span>
-                </h1>
-                <p style="font-size:12px;color:#718096;margin:2px 0 0 0;">Smart Job & Talent Network</p>
-              </div>
-            </div>
-          </div>
-        `,
-        attachment: null
-      };
-    }
-    
-    // Final fallback: text-based logo
-    return {
-      html: this.getFallbackLogoHtml(),
-      attachment: null
-    };
-  }
-
-  private getCommonStyles() {
+  private getCommonStyles(): string {
     return `
       body {
         font-family: Arial, Helvetica, sans-serif;
@@ -268,7 +228,7 @@ export class EmailService {
     `;
   }
 
-  private getFooterHtml(year: number) {
+  private getFooterHtml(year: number): string {
     return `
       <div class="footer">
         <p>&copy; ${year} WonNet. All rights reserved.</p>
@@ -288,18 +248,10 @@ export class EmailService {
       .trim();
   }
 
-  /**
-   * Send Welcome Email - Using CID method (MOST RELIABLE)
-   */
   async sendWelcomeEmail(to: string, userName: string) {
-    if (!this.transporter) {
-      this.logger.warn('⚠️ Email not available - transporter not initialized');
-      return;
-    }
-
     try {
-      const { html: logoHtml, attachment } = this.getLogoWithFallback();
-      
+      const logoHtml = this.getLogoHtml();
+      const attachment = this.getLogoAttachment();
       const subject = `Welcome to WonNet`;
 
       const html = `
@@ -327,48 +279,21 @@ export class EmailService {
         </html>
       `;
 
-      // Build mail options with attachment
-      const mailOptions: any = {
-        from: this.configService.get('EMAIL_FROM'),
-        to: to,
-        subject: subject,
-        html: html,
-        text: this.htmlToText(html),
-      };
-
-      // Add attachment if available
-      if (attachment) {
-        mailOptions.attachments = [attachment];
-        this.logger.log('📎 Logo attached as CID');
-      }
-
-      const result = await this.transporter.sendMail(mailOptions);
-
-      this.logger.log(`✅ Welcome email sent to ${to}`);
-      return result;
-      
+      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
-      this.logger.error(`❌ Failed to send email:`, error.message);
+      this.logger.error(`❌ Failed to send welcome email: ${error.message}`);
     }
   }
 
-  /**
-   * Send Shortlisted Email
-   */
   async sendShortlistedEmail(
     to: string,
     userName: string,
     jobTitle: string,
     companyName: string,
   ) {
-    if (!this.transporter) {
-      this.logger.warn('⚠️ Email not available - transporter not initialized');
-      return;
-    }
-
     try {
-      const { html: logoHtml, attachment } = this.getLogoWithFallback();
-      
+      const logoHtml = this.getLogoHtml();
+      const attachment = this.getLogoAttachment();
       const subject = `Application Update - ${jobTitle}`;
 
       const html = `
@@ -396,46 +321,22 @@ export class EmailService {
         </html>
       `;
 
-      const mailOptions: any = {
-        from: this.configService.get('EMAIL_FROM'),
-        to: to,
-        subject: subject,
-        html: html,
-        text: this.htmlToText(html),
-      };
-
-      if (attachment) {
-        mailOptions.attachments = [attachment];
-      }
-
-      const result = await this.transporter.sendMail(mailOptions);
-
-      this.logger.log(`✅ Shortlisted email sent to ${to}`);
-      return result;
-      
+      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
-      this.logger.error(`❌ Failed to send email:`, error.message);
+      this.logger.error(`❌ Failed to send shortlisted email: ${error.message}`);
     }
   }
 
-  /**
-   * Send Interview Email
-   */
   async sendInterviewEmail(
     to: string,
     userName: string,
     jobTitle: string,
     companyName: string,
-    interviewData: { date: string; time: string; mode: string; linkOrAddress: string; },
+    interviewData: { date: string; time: string; mode: string; linkOrAddress: string },
   ) {
-    if (!this.transporter) {
-      this.logger.warn('⚠️ Email not available - transporter not initialized');
-      return;
-    }
-
     try {
-      const { html: logoHtml, attachment } = this.getLogoWithFallback();
-      
+      const logoHtml = this.getLogoHtml();
+      const attachment = this.getLogoAttachment();
       const subject = `Interview Invitation - ${jobTitle}`;
 
       const html = `
@@ -468,45 +369,21 @@ export class EmailService {
         </html>
       `;
 
-      const mailOptions: any = {
-        from: this.configService.get('EMAIL_FROM'),
-        to: to,
-        subject: subject,
-        html: html,
-        text: this.htmlToText(html),
-      };
-
-      if (attachment) {
-        mailOptions.attachments = [attachment];
-      }
-
-      const result = await this.transporter.sendMail(mailOptions);
-
-      this.logger.log(`✅ Interview email sent to ${to}`);
-      return result;
-      
+      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
-      this.logger.error(`❌ Failed to send email:`, error.message);
+      this.logger.error(`❌ Failed to send interview email: ${error.message}`);
     }
   }
 
-  /**
-   * Send Offer Email
-   */
   async sendSelectedEmail(
     to: string,
     userName: string,
     jobTitle: string,
     companyName: string,
   ) {
-    if (!this.transporter) {
-      this.logger.warn('⚠️ Email not available - transporter not initialized');
-      return;
-    }
-
     try {
-      const { html: logoHtml, attachment } = this.getLogoWithFallback();
-      
+      const logoHtml = this.getLogoHtml();
+      const attachment = this.getLogoAttachment();
       const subject = `Congratulations! You've been selected for ${jobTitle}`;
 
       const html = `
@@ -533,40 +410,18 @@ export class EmailService {
         </html>
       `;
 
-      const mailOptions: any = {
-        from: this.configService.get('EMAIL_FROM'),
-        to: to,
-        subject: subject,
-        html: html,
-        text: this.htmlToText(html),
-      };
-
-      if (attachment) {
-        mailOptions.attachments = [attachment];
-      }
-
-      const result = await this.transporter.sendMail(mailOptions);
-
-      this.logger.log(`✅ Offer email sent to ${to}`);
-      return result;
-      
+      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
-      this.logger.error(`❌ Failed to send email:`, error.message);
+      this.logger.error(`❌ Failed to send offer email: ${error.message}`);
     }
   }
 
-  /**
-   * Test Email
-   */
   async sendTestEmail(to: string) {
-    if (!this.transporter) {
-      this.logger.warn('⚠️ Email not available - transporter not initialized');
-      return;
-    }
-
     try {
-      const { html: logoHtml, attachment } = this.getLogoWithFallback();
-      
+      const logoHtml = this.getLogoHtml();
+      const attachment = this.getLogoAttachment();
+      const subject = 'Test Email - WonNet';
+
       const html = `
         <!DOCTYPE html>
         <html>
@@ -591,26 +446,9 @@ export class EmailService {
         </html>
       `;
 
-      const mailOptions: any = {
-        from: this.configService.get('EMAIL_FROM'),
-        to: to,
-        subject: 'Test Email - WonNet',
-        html: html,
-        text: 'This is a test email from WonNet.',
-      };
-
-      if (attachment) {
-        mailOptions.attachments = [attachment];
-        this.logger.log('📎 Logo attached as CID for test email');
-      }
-
-      const result = await this.transporter.sendMail(mailOptions);
-
-      this.logger.log(`✅ Test email sent to ${to}`);
-      return result;
-      
+      await this.sendBrevoEmail(to, subject, html, 'This is a test email from WonNet.', attachment || undefined);
     } catch (error: any) {
-      this.logger.error(`❌ Failed to send email:`, error.message);
+      this.logger.error(`❌ Failed to send test email: ${error.message}`);
     }
   }
 }
