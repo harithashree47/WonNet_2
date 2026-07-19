@@ -12,34 +12,43 @@ export class EmailService {
   private cachedLogoAttached: Buffer | null = null;
 
   constructor(private configService: ConfigService) {
-    this.initializeTransporter();
     this.loadLogo();
+    this.initializeTransporter();
   }
 
   private async initializeTransporter() {
-    try {
-      const host = this.configService.get('EMAIL_HOST');
-      const port = parseInt(this.configService.get('EMAIL_PORT') || '587');
-      const user = this.configService.get('EMAIL_USER');
-      const pass = this.configService.get('EMAIL_PASSWORD');
+    const host = this.configService.get('EMAIL_HOST') || 'smtp-relay.brevo.com';
+    const port = parseInt(this.configService.get('EMAIL_PORT') || '587');
+    const user = this.configService.get('EMAIL_USER');
+    const pass = this.configService.get('EMAIL_PASSWORD');
 
-      this.transporter = nodemailer.createTransport({
-        host: host || 'smtp-relay.brevo.com',
-        port: port || 587,
-        secure: false,
-        auth: { user, pass },
-        tls: { rejectUnauthorized: false },
-        connectionTimeout: 10000,
-        socketTimeout: 15000,
-      });
+    const portsToTry = [port, 587, 25, 465];
 
-      await this.transporter.verify();
-      this.logger.log('✅ Email transporter ready');
-      
-    } catch (error) {
-      this.logger.error('Failed to setup email:', error);
-      throw error;
+    for (const tryPort of portsToTry) {
+      try {
+        this.logger.log(`🔌 Trying SMTP ${host}:${tryPort}...`);
+        
+        this.transporter = nodemailer.createTransport({
+          host,
+          port: tryPort,
+          secure: tryPort === 465,
+          auth: { user, pass },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 10000,
+          socketTimeout: 15000,
+        });
+
+        await this.transporter.verify();
+        this.logger.log(`✅ Email transporter ready on port ${tryPort}`);
+        return;
+        
+      } catch (error: any) {
+        this.logger.warn(`⚠️ Port ${tryPort} failed: ${error.message}`);
+        this.transporter = null;
+      }
     }
+
+    this.logger.warn('❌ All SMTP ports failed. Email sending will be disabled until connection is restored.');
   }
 
   /**
@@ -283,6 +292,11 @@ export class EmailService {
    * Send Welcome Email - Using CID method (MOST RELIABLE)
    */
   async sendWelcomeEmail(to: string, userName: string) {
+    if (!this.transporter) {
+      this.logger.warn('⚠️ Email not available - transporter not initialized');
+      return;
+    }
+
     try {
       const { html: logoHtml, attachment } = this.getLogoWithFallback();
       
@@ -348,6 +362,11 @@ export class EmailService {
     jobTitle: string,
     companyName: string,
   ) {
+    if (!this.transporter) {
+      this.logger.warn('⚠️ Email not available - transporter not initialized');
+      return;
+    }
+
     try {
       const { html: logoHtml, attachment } = this.getLogoWithFallback();
       
@@ -411,6 +430,11 @@ export class EmailService {
     companyName: string,
     interviewData: { date: string; time: string; mode: string; linkOrAddress: string; },
   ) {
+    if (!this.transporter) {
+      this.logger.warn('⚠️ Email not available - transporter not initialized');
+      return;
+    }
+
     try {
       const { html: logoHtml, attachment } = this.getLogoWithFallback();
       
@@ -478,6 +502,11 @@ export class EmailService {
     jobTitle: string,
     companyName: string,
   ) {
+    if (!this.transporter) {
+      this.logger.warn('⚠️ Email not available - transporter not initialized');
+      return;
+    }
+
     try {
       const { html: logoHtml, attachment } = this.getLogoWithFallback();
       
@@ -534,6 +563,11 @@ export class EmailService {
    * Test Email
    */
   async sendTestEmail(to: string) {
+    if (!this.transporter) {
+      this.logger.warn('⚠️ Email not available - transporter not initialized');
+      return;
+    }
+
     try {
       const { html: logoHtml, attachment } = this.getLogoWithFallback();
       
