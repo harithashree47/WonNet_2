@@ -34,13 +34,13 @@ export class AuthService {
         },
       });
 
-      // Send welcome email
-      try {
-        if (user.email) {
-          await this.emailService.sendWelcomeEmail(user.email, user.name);
-        }
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
+      // Send welcome email in background (don't block registration)
+      if (user.email) {
+        Promise.resolve()
+          .then(() => this.emailService.sendWelcomeEmail(user.email, user.name))
+          .catch((emailError) =>
+            console.error('Failed to send welcome email:', emailError),
+          );
       }
 
       return {

@@ -34,8 +34,14 @@ async function bootstrap() {
         return;
       }
       
-      // Allow any Vercel deployment (for preview deployments)
+      // Allow any Vercel deployment (for preview and production deployments)
       if (origin.endsWith('.vercel.app')) {
+        callback(null, true);
+        return;
+      }
+      
+      // Allow any Render domain
+      if (origin.endsWith('.onrender.com')) {
         callback(null, true);
         return;
       }

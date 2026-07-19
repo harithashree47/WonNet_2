@@ -29,6 +29,8 @@ export class EmailService {
         secure: false,
         auth: { user, pass },
         tls: { rejectUnauthorized: false },
+        connectionTimeout: 10000,
+        socketTimeout: 15000,
       });
 
       await this.transporter.verify();
@@ -331,7 +333,7 @@ export class EmailService {
       this.logger.log(`✅ Welcome email sent to ${to}`);
       return result;
       
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
       throw error;
     }
@@ -393,7 +395,7 @@ export class EmailService {
       this.logger.log(`✅ Shortlisted email sent to ${to}`);
       return result;
       
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
       throw error;
     }
@@ -461,7 +463,7 @@ export class EmailService {
       this.logger.log(`✅ Interview email sent to ${to}`);
       return result;
       
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
       throw error;
     }
@@ -522,7 +524,7 @@ export class EmailService {
       this.logger.log(`✅ Offer email sent to ${to}`);
       return result;
       
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
       throw error;
     }
@@ -577,7 +579,7 @@ export class EmailService {
       this.logger.log(`✅ Test email sent to ${to}`);
       return result;
       
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
       throw error;
     }
