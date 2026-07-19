@@ -349,7 +349,6 @@ export class EmailService {
       
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
-      throw error;
     }
   }
 
@@ -416,7 +415,6 @@ export class EmailService {
       
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
-      throw error;
     }
   }
 
@@ -489,7 +487,6 @@ export class EmailService {
       
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
-      throw error;
     }
   }
 
@@ -555,7 +552,6 @@ export class EmailService {
       
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
-      throw error;
     }
   }
 
@@ -615,7 +611,6 @@ export class EmailService {
       
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email:`, error.message);
-      throw error;
     }
   }
 }
