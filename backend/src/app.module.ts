@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
@@ -20,7 +21,7 @@ import { HrModule } from './hr/hr.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { EmailModule } from './email/email.module';
 @Module({
-  imports: [UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule, JobModule, ApplicationModule, HrModule, WishlistModule, EmailModule],
+  imports: [PrismaModule, UserModule, AuthModule, CategoryModule, JobtypeModule, WorkmodeModule, ExperienceLevelModule, EducationLevelModule, LocationModule, DepartmentModule, CompanyModule, UploadModule, SkillModule, BenefitModule, JobModule, ApplicationModule, HrModule, WishlistModule, EmailModule],
   controllers: [AppController],
   providers: [AppService],
 })

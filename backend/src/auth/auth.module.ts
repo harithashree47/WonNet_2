@@ -4,7 +4,6 @@ import { APP_GUARD } from '@nestjs/core';
 
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtStrategy } from './jwt.strategy';
 import { RolesGuard } from './roles.guard';
 import { EmailModule } from 'src/email/email.module';
@@ -20,7 +19,6 @@ import { EmailModule } from 'src/email/email.module';
   controllers: [AuthController],
   providers: [
     AuthService,
-    PrismaService,
     JwtStrategy,
     RolesGuard,
   ],
