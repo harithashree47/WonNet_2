@@ -2,87 +2,87 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { join } from 'path';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private cachedLogo: string | null = null;
   private cachedLogoAttached: Buffer | null = null;
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor(private configService: ConfigService) {
     this.loadLogo();
+    this.createTransporter();
   }
 
-  private getResendApiKey(): string {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY is not configured');
+  private createTransporter() {
+    try {
+      const host = this.configService.get('EMAIL_HOST') || 'smtp.gmail.com';
+      const port = parseInt(this.configService.get('EMAIL_PORT') || '587', 10);
+      const secure = (this.configService.get('EMAIL_SECURE') || 'false').toLowerCase() === 'true';
+      const user = this.configService.get('EMAIL_USER');
+      const pass = this.configService.get('EMAIL_PASSWORD');
+
+      if (!user) {
+        this.logger.warn('EMAIL_USER is not configured');
+        return;
+      }
+
+      this.transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: { user, pass: pass || '' },
+      });
+
+      this.logger.log(`Nodemailer transport created: ${host}:${port} secure=${String(secure)}`);
+    } catch (error: any) {
+      this.logger.error(`Failed to create Nodemailer transport: ${error.message}`);
+      this.transporter = null;
     }
-    return apiKey;
   }
 
-  private getResendSender(): string {
-    const fromEmail = this.configService.get<string>('RESEND_SENDER_EMAIL') || 'harithashreeit2001@gmail.com';
-    const name = fromEmail.split('@')[0].replace(/\./g, ' ');
-    return `${name} <${fromEmail}>`;
-  }
-
-  private async sendResendEmail(
+  private async sendMail(
     to: string,
     subject: string,
     html: string,
     text: string,
     attachment: { filename: string; content: Buffer; contentType: string } | null = null,
-  ): Promise<void> {
-    const apiKey = this.getResendApiKey();
-    const from = this.getResendSender();
-
-    const payload: any = {
-      from,
-      to: [to],
-      subject,
-      html,
-      text,
-    };
-
-    if (attachment) {
-      payload.attachments = [
-        {
-          filename: attachment.filename,
-          content: attachment.content.toString('base64'),
-          contentType: attachment.contentType,
-        },
-      ];
+  ) {
+    if (!this.transporter) {
+      this.logger.error('Mail transporter is not initialized');
+      return;
     }
 
+    const from = this.configService.get('EMAIL_FROM') || to;
+
     try {
-      this.logger.log(`📧 Sending email via Resend HTTP API to ${to}...`);
+      const mailOptions: nodemailer.SendMailOptions = {
+        from,
+        to,
+        subject,
+        html,
+        text,
+      };
 
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        this.logger.error(`❌ Resend API error ${response.status}: ${errorText}`);
-        return;
+      if (attachment) {
+        mailOptions.attachments = [
+          {
+            filename: attachment.filename,
+            content: attachment.content.toString('base64'),
+            contentType: attachment.contentType,
+          },
+        ];
       }
 
-      const result = await response.json();
-      this.logger.log(`✅ Email sent successfully to ${to}. MessageId: ${result.id}`);
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`✅ Email sent successfully to ${to}. MessageId: ${info.messageId}`);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email to ${to}: ${error.message}`);
     }
   }
 
-  /**
-   * Load logo and cache both base64 and buffer versions
-   */
   private loadLogo(): { base64: string | null; buffer: Buffer | null } {
     try {
       if (this.cachedLogo && this.cachedLogoAttached) {
@@ -268,7 +268,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendMail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send welcome email: ${error.message}`);
     }
@@ -310,7 +310,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendMail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send shortlisted email: ${error.message}`);
     }
@@ -358,7 +358,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendMail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send interview email: ${error.message}`);
     }
@@ -399,7 +399,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendMail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send offer email: ${error.message}`);
     }
@@ -435,7 +435,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendResendEmail(to, subject, html, 'This is a test email from WonNet.', attachment || undefined);
+      await this.sendMail(to, subject, html, 'This is a test email from WonNet.', attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send test email: ${error.message}`);
     }
