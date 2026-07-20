@@ -34,6 +34,9 @@ export class EmailService {
         port,
         secure,
         auth: { user, pass: pass || '' },
+        connectionTimeout: 10000,
+        socketTimeout: 10000,
+        greetingTimeout: 10000,
       });
 
       this.logger.log(`Nodemailer transport created: ${host}:${port} secure=${String(secure)}`);
@@ -57,29 +60,43 @@ export class EmailService {
 
     const from = this.configService.get('EMAIL_FROM') || to;
 
-    try {
-      const mailOptions: nodemailer.SendMailOptions = {
-        from,
-        to,
-        subject,
-        html,
-        text,
-      };
+    const maxRetries = 3;
+    const retryDelays = [1000, 3000, 5000];
 
-      if (attachment) {
-        mailOptions.attachments = [
-          {
-            filename: attachment.filename,
-            content: attachment.content.toString('base64'),
-            contentType: attachment.contentType,
-          },
-        ];
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const mailOptions: nodemailer.SendMailOptions = {
+          from,
+          to,
+          subject,
+          html,
+          text,
+        };
+
+        if (attachment) {
+          mailOptions.attachments = [
+            {
+              filename: attachment.filename,
+              content: attachment.content.toString('base64'),
+              contentType: attachment.contentType,
+            },
+          ];
+        }
+
+        const info = await this.transporter.sendMail(mailOptions);
+        this.logger.log(`✅ Email sent successfully to ${to}. MessageId: ${info.messageId}`);
+        return;
+      } catch (error: any) {
+        const isRetryable = /ECONNECTION|ETIMEDOUT|timeout|Socket hang up/i.test(error.message || '');
+        if (attempt < maxRetries && isRetryable) {
+          const delay = retryDelays[attempt - 1] || 5000;
+          this.logger.warn(`⏳ Email to ${to} failed (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        } else {
+          this.logger.error(`❌ Failed to send email to ${to}: ${error.message}`);
+          return;
+        }
       }
-
-      const info = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`✅ Email sent successfully to ${to}. MessageId: ${info.messageId}`);
-    } catch (error: any) {
-      this.logger.error(`❌ Failed to send email to ${to}: ${error.message}`);
     }
   }
 
