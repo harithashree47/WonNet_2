@@ -3,19 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { join } from 'path';
 
-interface BrevoEmailPayload {
-  sender: { email: string; name: string };
-  to: { email: string; name?: string }[];
-  subject: string;
-  htmlContent: string;
-  textContent: string;
-  attachment?: {
-    content: string;
-    name: string;
-    contentType: string;
-  };
-}
-
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -26,66 +13,68 @@ export class EmailService {
     this.loadLogo();
   }
 
-  private getBrevoApiKey(): string {
-    const apiKey = this.configService.get('EMAIL_PASSWORD');
+  private getResendApiKey(): string {
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
     if (!apiKey) {
-      throw new Error('EMAIL_PASSWORD (Brevo API key) is not configured');
+      throw new Error('RESEND_API_KEY is not configured');
     }
     return apiKey;
   }
 
-  private getBrevoSender(): { email: string; name: string } {
-    const fromEmail = this.configService.get('EMAIL_FROM') || 'harithashreeit2001@gmail.com';
+  private getResendSender(): string {
+    const fromEmail = this.configService.get<string>('RESEND_SENDER_EMAIL') || 'harithashreeit2001@gmail.com';
     const name = fromEmail.split('@')[0].replace(/\./g, ' ');
-    return { email: fromEmail, name };
+    return `${name} <${fromEmail}>`;
   }
 
-  private async sendBrevoEmail(
+  private async sendResendEmail(
     to: string,
     subject: string,
     html: string,
     text: string,
     attachment: { filename: string; content: Buffer; contentType: string } | null = null,
   ): Promise<void> {
-    const apiKey = this.getBrevoApiKey();
-    const sender = this.getBrevoSender();
+    const apiKey = this.getResendApiKey();
+    const from = this.getResendSender();
 
-    const payload: BrevoEmailPayload = {
-      sender,
-      to: [{ email: to }],
+    const payload: any = {
+      from,
+      to: [to],
       subject,
-      htmlContent: html,
-      textContent: text,
+      html,
+      text,
     };
 
     if (attachment) {
-      payload.attachment = {
-        content: attachment.content.toString('base64'),
-        name: attachment.filename,
-        contentType: attachment.contentType,
-      };
+      payload.attachments = [
+        {
+          filename: attachment.filename,
+          content: attachment.content.toString('base64'),
+          contentType: attachment.contentType,
+        },
+      ];
     }
 
     try {
-      this.logger.log(`📧 Sending email via Brevo HTTP API to ${to}...`);
+      this.logger.log(`📧 Sending email via Resend HTTP API to ${to}...`);
 
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api-key': apiKey,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`❌ Brevo API error ${response.status}: ${errorText}`);
+        this.logger.error(`❌ Resend API error ${response.status}: ${errorText}`);
         return;
       }
 
       const result = await response.json();
-      this.logger.log(`✅ Email sent successfully to ${to}. MessageId: ${result.messageId}`);
+      this.logger.log(`✅ Email sent successfully to ${to}. MessageId: ${result.id}`);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email to ${to}: ${error.message}`);
     }
@@ -279,7 +268,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send welcome email: ${error.message}`);
     }
@@ -321,7 +310,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send shortlisted email: ${error.message}`);
     }
@@ -369,7 +358,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send interview email: ${error.message}`);
     }
@@ -410,7 +399,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendBrevoEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
+      await this.sendResendEmail(to, subject, html, this.htmlToText(html), attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send offer email: ${error.message}`);
     }
@@ -446,7 +435,7 @@ export class EmailService {
         </html>
       `;
 
-      await this.sendBrevoEmail(to, subject, html, 'This is a test email from WonNet.', attachment || undefined);
+      await this.sendResendEmail(to, subject, html, 'This is a test email from WonNet.', attachment || undefined);
     } catch (error: any) {
       this.logger.error(`❌ Failed to send test email: ${error.message}`);
     }
