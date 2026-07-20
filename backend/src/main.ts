@@ -1,3 +1,7 @@
+import dns from 'dns';
+
+dns.setDefaultResultOrder('ipv4first');
+
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
@@ -78,7 +82,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Server running on http://localhost:${port}`);
-console.log(`Uploads available at http://localhost:${port}/uploads/`);
+  console.log(`Uploads available at http://localhost:${port}/uploads/`);
   console.log(`Assets available at http://localhost:${port}/assets/`);
 }
 bootstrap();

@@ -37,7 +37,7 @@ export class EmailService {
         connectionTimeout: 10000,
         socketTimeout: 10000,
         greetingTimeout: 10000,
-      });
+      } as nodemailer.TransportOptions);
 
       this.logger.log(`Nodemailer transport created: ${host}:${port} secure=${String(secure)}`);
     } catch (error: any) {
