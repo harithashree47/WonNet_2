@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import { join } from 'path';
 import * as nodemailer from 'nodemailer';
+import { resolve4 } from 'dns/promises';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
   private cachedLogo: string | null = null;
   private cachedLogoAttached: Buffer | null = null;
@@ -13,10 +14,13 @@ export class EmailService {
 
   constructor(private configService: ConfigService) {
     this.loadLogo();
-    this.createTransporter();
   }
 
-  private createTransporter() {
+  async onModuleInit() {
+    await this.createTransporter();
+  }
+
+  private async createTransporter() {
     try {
       const host = this.configService.get('EMAIL_HOST') || 'smtp.gmail.com';
       const port = parseInt(this.configService.get('EMAIL_PORT') || '587', 10);
@@ -29,20 +33,40 @@ export class EmailService {
         return;
       }
 
+      // FIX: Resolve smtp.gmail.com to an IPv4 address explicitly.
+      // Render.com blocks all outbound IPv6 traffic (no IPv6 routing).
+      // Nodemailer's `family: 4` option is NOT reliably honored by the
+      // underlying SMTP connection pool, so we resolve the IP here and
+      // use it as the connection host to force IPv4 at the network layer.
+      let resolvedHost = host;
+      try {
+        const addresses = await resolve4(host);
+        resolvedHost = addresses[0];
+        this.logger.log(`Resolved ${host} → ${resolvedHost} (IPv4)`);
+      } catch (dnsError: any) {
+        this.logger.warn(`DNS resolution failed for ${host}, using hostname as-is: ${dnsError.message}`);
+      }
+
       this.transporter = nodemailer.createTransport({
-        host,
+        host: resolvedHost,
         port,
         secure,
         auth: { user, pass: pass || '' },
         connectionTimeout: 10000,
         socketTimeout: 10000,
         greetingTimeout: 10000,
-        // Force IPv4 only — fixes "connect ENETUNREACH" error on Render.com
-        // Render blocks IPv6 outbound connections, causing emails to fail
+        // Also set family: 4 as a secondary safeguard in case the SMTP
+        // connection pool respects it for any supplementary connections
         family: 4,
-      } as nodemailer.TransportOptions);
+        // tls.servername is required when connecting via IP address
+        // so that the TLS SNI (Server Name Indication) matches the
+        // Gmail certificate which is issued to smtp.gmail.com
+        tls: {
+          servername: host,
+        },
+      } as any);
 
-      this.logger.log(`Nodemailer transport created: ${host}:${port} secure=${String(secure)}`);
+      this.logger.log(`Nodemailer transport created: ${host} (via ${resolvedHost}):${port} secure=${String(secure)}`);
     } catch (error: any) {
       this.logger.error(`Failed to create Nodemailer transport: ${error.message}`);
       this.transporter = null;
