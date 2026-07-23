@@ -1,10 +1,6 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // Required for PgBouncer (connection pooler used by Render.com and Supabase)
-  // Prevents "prepared statement 's0' already exists" error (PostgreSQL code 42P05)
-  // by limiting connection pool usage and disabling prepared statements
-  connection_limit = 1
 }
 
 generator client {
