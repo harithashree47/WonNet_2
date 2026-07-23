@@ -1,6 +1,6 @@
-import * as dns from 'dns';
+import { setDefaultResultOrder } from 'dns';
 
-dns.setDefaultResultOrder('ipv4first');
+setDefaultResultOrder('ipv4first');
 
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
