@@ -37,6 +37,9 @@ export class EmailService {
         connectionTimeout: 10000,
         socketTimeout: 10000,
         greetingTimeout: 10000,
+        // Force IPv4 only — fixes "connect ENETUNREACH" error on Render.com
+        // Render blocks IPv6 outbound connections, causing emails to fail
+        family: 4,
       } as nodemailer.TransportOptions);
 
       this.logger.log(`Nodemailer transport created: ${host}:${port} secure=${String(secure)}`);
