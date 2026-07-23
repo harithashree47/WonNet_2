@@ -61,7 +61,8 @@ export class EmailService {
       return;
     }
 
-    const from = this.configService.get('EMAIL_FROM') || to;
+    // FIX: If EMAIL_FROM is not set, fall back to EMAIL_USER instead of the recipient's email
+    const from = this.configService.get('EMAIL_FROM') || this.configService.get('EMAIL_USER') || 'noreply@wonnet.com';
 
     const maxRetries = 3;
     const retryDelays = [1000, 3000, 5000];
